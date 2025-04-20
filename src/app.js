@@ -157,7 +157,7 @@ export default function App() {
 
       const sorted = Object.entries(litMap)
         .sort(([, a], [, b]) => b - a)
-        .map(([address, count], rank) => ({ rank: rank + 1, address, count }));
+        .map(([address, count], index) => ({ rank: index + 1, address, count }));
 
       setLeaderboard(sorted);
     } catch (err) {
@@ -185,11 +185,22 @@ export default function App() {
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>
-            <h2 style={{ textAlign: 'center' }}>🏆 Leaderboard</h2>
-            <ol>
+            <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
+            <ol style={styles.leaderboardList}>
               {leaderboard.map(({ rank, address, count }) => (
-                <li key={rank}>
-                  {rank}. {address === account ? <strong>{address}</strong> : address} - {count} lit
+                <li
+                  key={rank}
+                  style={{
+                    ...styles.leaderboardItem,
+                    backgroundColor: address === account ? '#d0e6ff' : 'transparent',
+                    fontWeight: address === account ? 'bold' : 'normal',
+                    borderRadius: '6px',
+                    padding: '0.3rem 0.5rem',
+                  }}
+                >
+                  <span style={styles.rank}>{rank}.</span>{' '}
+                  <span style={styles.addressText}>{address}</span> -{' '}
+                  <span style={styles.count}>{count} lit</span>
                 </li>
               ))}
             </ol>
@@ -204,7 +215,7 @@ const styles = {
   container: {
     maxWidth: '100%',
     padding: '1rem',
-    margin: '0 auto',
+    margin: 0,
     fontFamily: 'Arial, sans-serif',
     backgroundColor: '#075ad0',
     minHeight: '100vh',
@@ -232,5 +243,33 @@ const styles = {
     background: '#f0f0f0',
     borderRadius: '8px',
     color: '#000',
+    maxWidth: '600px',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  leaderboardTitle: {
+    textAlign: 'center',
+    fontSize: '1.5rem',
+    marginBottom: '1rem',
+  },
+  leaderboardList: {
+    listStyle: 'none',
+    paddingLeft: 0,
+  },
+  leaderboardItem: {
+    marginBottom: '0.5rem',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  rank: {
+    fontWeight: 'bold',
+    marginRight: '0.5rem',
+  },
+  addressText: {
+    flexGrow: 1,
+    overflowWrap: 'anywhere',
+  },
+  count: {
+    fontWeight: 'bold',
   },
 };
