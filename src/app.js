@@ -190,11 +190,14 @@ export default function App() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
+          <p style={styles.mintNote}>
+  🎉 Happy 4/20! Grab a JOINT & light it! Join us in celebration! Mint is live for roughly 24 hours — don’t wait!
+</p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>
             <p style={styles.leaderboardNote}>Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project</p>
-            <h2 style={styles.leaderboardTitle}>🏆 Lit Joint Leaderboard</h2>
+            <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
             <ol style={styles.leaderboardList}>
               {leaderboard.map(({ rank, address, count }) => (
                 <li
@@ -253,6 +256,12 @@ const styles = {
     fontSize: '1rem',
     textAlign: 'center',
     marginBottom: '1rem',
+  },
+  mintNote: {
+    fontSize: '1rem',
+    textAlign: 'center',
+    marginBottom: '1rem',
+    fontWeight: '500',
   },
   leaderboard: {
     marginTop: '2rem',
