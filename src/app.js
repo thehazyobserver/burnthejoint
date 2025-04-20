@@ -218,7 +218,7 @@ export default function App() {
                   }}
                 >
                   <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
-                  <span style={styles.addressText}>{address}</span> -{' '}
+                  <span style={styles.addressText}>{address}</span> {' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
               ))}
