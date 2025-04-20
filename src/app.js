@@ -29,7 +29,7 @@ export default function App() {
 
     const _provider = new ethers.BrowserProvider(connection, SONIC_CHAIN_ID);
     const _signer = await _provider.getSigner();
-    const _account = await _signer.address;
+    const _account = await _signer.getAddress();
     const _contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, _signer);
 
     setProvider(_provider);
@@ -73,8 +73,18 @@ export default function App() {
       const nfts = await Promise.all(
         ids.map(async (id) => {
           const isLit = await contract.getLitStatus(id);
-          const tokenURI = await contract.tokenURI(id);
-          return { id: id.toString(), isLit, tokenURI };
+          const metadataUrl = await contract.tokenURI(id);
+
+          let image = '';
+          try {
+            const response = await fetch(metadataUrl);
+            const metadata = await response.json();
+            image = metadata.image;
+          } catch (err) {
+            console.error('Failed to load metadata:', err);
+          }
+
+          return { id: id.toString(), isLit, image };
         })
       );
       setOwnedNFTs(nfts);
