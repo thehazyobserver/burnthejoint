@@ -25,7 +25,7 @@ export default function App() {
     });
     const connection = await web3Modal.connect();
     const _provider = new ethers.BrowserProvider(connection, 146);
-    const _signer = _provider.getSigner();
+    const _signer = await _provider.getSigner();
     const _account = await _signer.getAddress();
     const _contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, _signer);
 
