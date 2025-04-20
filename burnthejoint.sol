@@ -1324,7 +1324,6 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
     to the best of the developers' knowledge to work as intended.
 */
 
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 
@@ -1351,8 +1350,20 @@ contract LIGHTTHEJOINT is ERC721Enumerable, Ownable {
     ) ERC721(_name, _symbol) {
         setBaseURI(_initBaseURI);
         setLitBaseURI(_initLitBaseURI);
+
+        // Register this contract on Sonic FeeM
+        registerMe();
     }
 
+    /// @dev Register my contract on Sonic FeeM
+    function registerMe() internal {
+        (bool _success, ) = address(0xDC2B0D2Dd2b7759D97D50db4eabDC36973110830).call(
+            abi.encodeWithSignature("selfRegister(uint256)", 92)
+        );
+        require(_success, "FeeM registration failed");
+    }
+
+    
     function mint() public payable {
         require(!paused, "Contract is paused");
         uint256 supply = totalSupply();
