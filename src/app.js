@@ -7,6 +7,7 @@ import MintButton from './components/MintButton';
 import NFTGallery from './components/NFTGallery';
 import litJointImg from './assets/images/litjoint.png';
 import unlitJointImg from './assets/images/unlitjoint.png';
+import xLogo from './assets/images/x.png';
 
 const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
@@ -212,6 +213,14 @@ export default function App() {
               ))}
             </ol>
           </div>
+          <div style={styles.links}>
+            <a href="https://x.com/PassThe_JOINT" target="_blank" rel="noopener noreferrer">
+              <img src={xLogo} alt="X" style={styles.icon} />
+            </a>
+            <a href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts" target="_blank" rel="noopener noreferrer">
+              <img src={unlitJointImg} alt="PaintSwap" style={styles.icon} />
+            </a>
+          </div>
         </>
       )}
     </div>
@@ -279,5 +288,18 @@ const styles = {
   },
   count: {
     fontWeight: 'bold',
+  },
+  links: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '1rem',
+    marginTop: '2rem',
+  },
+  icon: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '8px',
+    background: 'white',
+    padding: '5px',
   },
 };
