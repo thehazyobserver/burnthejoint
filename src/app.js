@@ -199,7 +199,7 @@ export default function App() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
-          <p style={styles.mintNote}>Mint will be live for roughly 24 hours! Don't wait!</p>
+          <p style={styles.mintNote}>The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!</p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>

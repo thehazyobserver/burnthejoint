@@ -1,7 +1,7 @@
 export default function MintButton({ onMint, loading }) {
     return (
       <button style={buttonStyle} onClick={onMint} disabled={loading}>
-        Mint
+        Mint 1 JOINT NFT!
       </button>
     );
   }
