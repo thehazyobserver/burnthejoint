@@ -24,7 +24,7 @@ export default function App() {
       providerOptions: {},
     });
     const connection = await web3Modal.connect();
-    const _provider = new ethers.providers.Web3Provider(connection, 146);
+    const _provider = new ethers.BrowserProvider(connection, 146);
     const _signer = _provider.getSigner();
     const _account = await _signer.getAddress();
     const _contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, _signer);
@@ -39,7 +39,7 @@ export default function App() {
     if (!contract) return;
     setLoading(true);
     try {
-      const tx = await contract.mint({ value: ethers.utils.parseEther('0') });
+      const tx = await contract.mint({ value: ethers.parseEther('0') });
       await tx.wait();
       fetchOwnedNFTs();
     } catch (err) {
