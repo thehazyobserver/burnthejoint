@@ -129,11 +129,16 @@ export default function App() {
       setTotalMinted(total.toString());
 
       let lit = 0;
-      for (let i = 1; i <= total; i++) {
-        try {
-          const status = await contract.getLitStatus(i);
-          if (status) lit++;
-        } catch {}
+      const batchSize = 50;
+      for (let i = 1; i <= total; i += batchSize) {
+        const promises = [];
+        for (let j = 0; j < batchSize && i + j <= total; j++) {
+          promises.push(contract.getLitStatus(i + j));
+        }
+        const results = await Promise.allSettled(promises);
+        results.forEach((res) => {
+          if (res.status === 'fulfilled' && res.value === true) lit++;
+        });
       }
       setTotalLit(lit);
     } catch (err) {
@@ -146,15 +151,24 @@ export default function App() {
     try {
       const total = await contract.totalSupply();
       const litMap = {};
+      const batchSize = 25;
 
-      for (let i = 1; i <= total; i++) {
-        try {
-          const isLit = await contract.getLitStatus(i);
-          if (isLit) {
-            const owner = await contract.ownerOf(i);
-            litMap[owner] = (litMap[owner] || 0) + 1;
-          }
-        } catch {}
+      for (let i = 1; i <= total; i += batchSize) {
+        const litStatusBatch = await Promise.all(
+          Array.from({ length: batchSize }, (_, j) =>
+            i + j <= total ? contract.getLitStatus(i + j) : false
+          )
+        );
+
+        const ownerBatch = await Promise.all(
+          litStatusBatch.map((isLit, idx) =>
+            isLit ? contract.ownerOf(i + idx) : null
+          )
+        );
+
+        ownerBatch.forEach((owner) => {
+          if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+        });
       }
 
       const sorted = Object.entries(litMap)
