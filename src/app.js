@@ -17,6 +17,8 @@ export default function App() {
   const [account, setAccount] = useState('');
   const [ownedNFTs, setOwnedNFTs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [totalMinted, setTotalMinted] = useState(0);
+  const [totalLit, setTotalLit] = useState(0);
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal({
@@ -42,7 +44,8 @@ export default function App() {
     try {
       const tx = await contract.mint({ value: ethers.parseEther('0') });
       await tx.wait();
-      fetchOwnedNFTs();
+      await fetchOwnedNFTs();
+      await fetchTotals();
     } catch (err) {
       console.error(err);
     }
@@ -55,7 +58,8 @@ export default function App() {
     try {
       const tx = await contract.lightTheJoint(tokenId);
       await tx.wait();
-      fetchOwnedNFTs();
+      await fetchOwnedNFTs();
+      await fetchTotals();
     } catch (err) {
       console.error(err);
     }
@@ -79,9 +83,29 @@ export default function App() {
     }
   };
 
+  const fetchTotals = async () => {
+    if (!contract) return;
+    try {
+      const total = await contract.totalSupply();
+      setTotalMinted(total.toString());
+
+      let lit = 0;
+      for (let i = 1; i <= total; i++) {
+        try {
+          const status = await contract.getLitStatus(i);
+          if (status) lit++;
+        } catch {}
+      }
+      setTotalLit(lit);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (contract && account) {
       fetchOwnedNFTs();
+      fetchTotals();
     }
   }, [contract, account]);
 
@@ -93,6 +117,7 @@ export default function App() {
       ) : (
         <>
           <p style={styles.address}>Connected: {account}</p>
+          <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
         </>
@@ -116,7 +141,12 @@ const styles = {
   address: {
     fontSize: '0.9rem',
     textAlign: 'center',
-    marginBottom: '1rem',
+    marginBottom: '0.5rem',
     wordBreak: 'break-word',
+  },
+  stats: {
+    fontSize: '1rem',
+    textAlign: 'center',
+    marginBottom: '1rem',
   },
 };
