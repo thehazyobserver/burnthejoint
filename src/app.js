@@ -28,13 +28,46 @@ export default function App() {
       providerOptions: {},
     });
     const connection = await web3Modal.connect();
+    const provider = new ethers.BrowserProvider(connection);
+    const network = await provider.getNetwork();
 
-    const _provider = new ethers.BrowserProvider(connection, SONIC_CHAIN_ID);
-    const _signer = await _provider.getSigner();
+    if (network.chainId !== SONIC_CHAIN_ID) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x92' }],
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x92',
+                  chainName: 'Sonic',
+                  rpcUrls: [SONIC_RPC],
+                  nativeCurrency: { name: 'S', symbol: 'S', decimals: 18 },
+                  blockExplorerUrls: ['https://sonicscan.io'],
+                },
+              ],
+            });
+          } catch (addError) {
+            console.error('Add chain error:', addError);
+            return;
+          }
+        } else {
+          console.error('Switch chain error:', switchError);
+          return;
+        }
+      }
+    }
+
+    const _signer = await provider.getSigner();
     const _account = await _signer.getAddress();
     const _contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, _signer);
 
-    setProvider(_provider);
+    setProvider(provider);
     setSigner(_signer);
     setAccount(_account);
     setContract(_contract);
