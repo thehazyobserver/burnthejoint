@@ -173,6 +173,13 @@ export default function App() {
     }
   }, [contract, account]);
 
+  const getRankIcon = (rank) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return `#${rank}`;
+  };
+
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>🔥 Light The Joint</h1>
@@ -198,7 +205,7 @@ export default function App() {
                     padding: '0.3rem 0.5rem',
                   }}
                 >
-                  <span style={styles.rank}>{rank}.</span>{' '}
+                  <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
                   <span style={styles.addressText}>{address}</span> -{' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
@@ -264,6 +271,7 @@ const styles = {
   rank: {
     fontWeight: 'bold',
     marginRight: '0.5rem',
+    width: '3rem',
   },
   addressText: {
     flexGrow: 1,
