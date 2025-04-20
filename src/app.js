@@ -5,6 +5,8 @@ import contractABI from './abi/LIGHTTHEJOINT.json';
 import ConnectWallet from './components/ConnectWallet';
 import MintButton from './components/MintButton';
 import NFTGallery from './components/NFTGallery';
+import litJointImg from './assets/images/litjoint.png';
+import unlitJointImg from './assets/images/unlitjoint.png';
 
 const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
@@ -73,17 +75,7 @@ export default function App() {
       const nfts = await Promise.all(
         ids.map(async (id) => {
           const isLit = await contract.getLitStatus(id);
-          const metadataUrl = await contract.tokenURI(id);
-
-          let image = '';
-          try {
-            const response = await fetch(metadataUrl);
-            const metadata = await response.json();
-            image = metadata.image;
-          } catch (err) {
-            console.error('Failed to load metadata:', err);
-          }
-
+          const image = isLit ? litJointImg : unlitJointImg;
           return { id: id.toString(), isLit, image };
         })
       );
