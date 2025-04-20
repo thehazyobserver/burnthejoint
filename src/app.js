@@ -183,6 +183,14 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+      <div style={styles.linksTop}>
+        <a href="https://x.com/PassThe_JOINT" target="_blank" rel="noopener noreferrer">
+          <img src={xLogo} alt="X" style={styles.icon} />
+        </a>
+        <a href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts" target="_blank" rel="noopener noreferrer">
+          <img src={unlitJointImg} alt="PaintSwap" style={styles.icon} />
+        </a>
+      </div>
       <h1 style={styles.title}>🔥 Light The Joint</h1>
       {!account ? (
         <ConnectWallet onConnect={connectWallet} />
@@ -190,9 +198,7 @@ export default function App() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
-          <p style={styles.mintNote}>
-  🎉 Happy 4/20! Grab a JOINT & light it! Join us in celebration! Mint is live for roughly 24 hours — don’t wait!
-</p>
+          <p style={styles.mintNote}>Mint will be live for roughly 24 hours! Don't wait!</p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>
@@ -211,19 +217,11 @@ export default function App() {
                   }}
                 >
                   <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
-                  <span style={styles.addressText}>{address}</span> {' '}
+                  <span style={styles.addressText}>{address}</span> -{' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
               ))}
             </ol>
-          </div>
-          <div style={styles.links}>
-            <a href="https://x.com/PassThe_JOINT" target="_blank" rel="noopener noreferrer">
-              <img src={xLogo} alt="X" style={styles.icon} />
-            </a>
-            <a href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts" target="_blank" rel="noopener noreferrer">
-              <img src={unlitJointImg} alt="PaintSwap" style={styles.icon} />
-            </a>
           </div>
         </>
       )}
@@ -240,7 +238,6 @@ const styles = {
     backgroundColor: '#075ad0',
     minHeight: '100vh',
     color: 'white',
-    overflowX: 'hidden',
   },
   title: {
     fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
@@ -306,11 +303,11 @@ const styles = {
   count: {
     fontWeight: 'bold',
   },
-  links: {
+  linksTop: {
     display: 'flex',
     justifyContent: 'center',
     gap: '1rem',
-    marginTop: '2rem',
+    marginBottom: '1rem',
   },
   icon: {
     width: '40px',
