@@ -6,7 +6,8 @@ import ConnectWallet from './components/ConnectWallet';
 import MintButton from './components/MintButton';
 import NFTGallery from './components/NFTGallery';
 
-const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS';
+const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
+const SONIC_RPC = 'https://sonic.drpc.org';
 
 export default function App() {
   const [provider, setProvider] = useState(null);
@@ -17,9 +18,13 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const connectWallet = async () => {
-    const web3Modal = new Web3Modal();
+    const web3Modal = new Web3Modal({
+      network: 'sonic',
+      cacheProvider: false,
+      providerOptions: {},
+    });
     const connection = await web3Modal.connect();
-    const _provider = new ethers.providers.Web3Provider(connection);
+    const _provider = new ethers.providers.Web3Provider(connection, 146);
     const _signer = _provider.getSigner();
     const _account = await _signer.getAddress();
     const _contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, _signer);
