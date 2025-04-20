@@ -1,11 +1,3 @@
-/**
- *Submitted for verification at SonicScan.org on 2025-01-14
-*/
-
-/**
- *Submitted for verification at SonicScan.org on 2025-01-03
-*/
-
 // SPDX-License-Identifier: MIT
 
 // File: @openzeppelin/contracts/utils/Strings.sol
@@ -1332,139 +1324,99 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
     to the best of the developers' knowledge to work as intended.
 */
 
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-pragma solidity >=0.7.0 <0.9.0;
 
 contract LIGHTTHEJOINT is ERC721Enumerable, Ownable {
-  using Strings for uint256;
+    using Strings for uint256;
 
-  string public baseURI;
-  string public baseExtension = ".json";
-  string public notRevealedUri;
-  uint256 public publicCost = 0 ether; // Public mint price
-  uint256 public whitelistCost = 0 ether; // Whitelist mint price
-  uint256 public maxSupply = 100000;
-  uint256 public maxMintAmount = 1000;
-  uint256 public nftPerAddressLimit = 5000;
-  bool public paused = false;
-  bool public revealed = false;
-  bool public onlyWhitelisted = true; // If true, only whitelist minting is allowed
-  mapping(address => uint256) public whitelistMintAllowance; // Tracks mint allowance for each whitelisted address
-  mapping(address => uint256) public addressMintedBalance;
+    string public baseURI;
+    string public litBaseURI;
+    string public baseExtension = ".json";
+    uint256 public publicCost = 0 ether;
+    uint256 public maxSupply = 100000;
+    bool public paused = false;
 
-  constructor(
-    string memory _name,
-    string memory _symbol,
-    string memory _initBaseURI,
-    string memory _initNotRevealedUri
-  ) ERC721(_name, _symbol) {
-    setBaseURI(_initBaseURI);
-    setNotRevealedURI(_initNotRevealedUri);
-  }
+    mapping(uint256 => bool) public isLit;
+    mapping(address => uint256) public addressMintedBalance;
 
-  // internal
-  function _baseURI() internal view virtual override returns (string memory) {
-    return baseURI;
-  }
+    event JointLit(uint256 indexed tokenId);
 
-  // public mint function
-  function mint(uint256 _mintAmount) public payable {
-    require(!paused, "the contract is paused");
-    uint256 supply = totalSupply();
-    require(_mintAmount > 0, "need to mint at least 1 NFT");
-    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
-
-    if (msg.sender != owner()) {
-      if (onlyWhitelisted) {
-        require(whitelistMintAllowance[msg.sender] > 0, "user is not whitelisted or has no allowance");
-        uint256 ownerMintedCount = addressMintedBalance[msg.sender];
-        require(ownerMintedCount + _mintAmount <= whitelistMintAllowance[msg.sender], "max whitelist mint allowance exceeded");
-        require(msg.value >= whitelistCost * _mintAmount, "insufficient funds for whitelist mint");
-      } else {
-        require(msg.value >= publicCost * _mintAmount, "insufficient funds for public mint");
-      }
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        string memory _initBaseURI,
+        string memory _initLitBaseURI
+    ) ERC721(_name, _symbol) {
+        setBaseURI(_initBaseURI);
+        setLitBaseURI(_initLitBaseURI);
     }
 
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-      addressMintedBalance[msg.sender]++;
-      _safeMint(msg.sender, supply + i);
-    }
-  }
+    function mint() public payable {
+        require(!paused, "Contract is paused");
+        uint256 supply = totalSupply();
+        require(supply + 1 <= maxSupply, "Max NFT limit exceeded");
 
-  // Admin functions
-  function reveal() public onlyOwner {
-    revealed = true;
-  }
+        if (msg.sender != owner()) {
+            require(msg.value >= publicCost, "Insufficient funds");
+        }
 
-  function setNftPerAddressLimit(uint256 _limit) public onlyOwner {
-    nftPerAddressLimit = _limit;
-  }
-
-  function setPublicCost(uint256 _newCost) public onlyOwner {
-    publicCost = _newCost;
-  }
-
-  function setWhitelistCost(uint256 _newCost) public onlyOwner {
-    whitelistCost = _newCost;
-  }
-
-  function setMaxMintAmount(uint256 _newmaxMintAmount) public onlyOwner {
-    maxMintAmount = _newmaxMintAmount;
-  }
-
-  function setBaseURI(string memory _newBaseURI) public onlyOwner {
-    baseURI = _newBaseURI;
-  }
-
-  function setBaseExtension(string memory _newBaseExtension) public onlyOwner {
-    baseExtension = _newBaseExtension;
-  }
-
-  function setNotRevealedURI(string memory _notRevealedURI) public onlyOwner {
-    notRevealedUri = _notRevealedURI;
-  }
-
-  function pause(bool _state) public onlyOwner {
-    paused = _state;
-  }
-
-  function setOnlyWhitelisted(bool _state) public onlyOwner {
-    onlyWhitelisted = _state;
-  }
-
-  function setWhitelistUsers(address[] calldata _users, uint256[] calldata _allowances) public onlyOwner {
-    require(_users.length == _allowances.length, "Mismatched input arrays");
-    for (uint256 i = 0; i < _users.length; i++) {
-      whitelistMintAllowance[_users[i]] = _allowances[i];
-    }
-  }
-
-  // Utility functions
-  function walletOfOwner(address _owner) public view returns (uint256[] memory) {
-    uint256 ownerTokenCount = balanceOf(_owner);
-    uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-    for (uint256 i; i < ownerTokenCount; i++) {
-      tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-    }
-    return tokenIds;
-  }
-
-  function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-    require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-
-    if (revealed == false) {
-      return notRevealedUri;
+        addressMintedBalance[msg.sender]++;
+        _safeMint(msg.sender, supply + 1);
     }
 
-    string memory currentBaseURI = _baseURI();
-    return bytes(currentBaseURI).length > 0
-        ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), baseExtension))
-        : "";
-  }
+    function lightTheJoint(uint256 tokenId) public {
+        require(_exists(tokenId), "Token does not exist");
+        require(ownerOf(tokenId) == msg.sender, "You must own this token to light it");
+        require(!isLit[tokenId], "This joint is already lit");
 
-  function withdraw() public payable onlyOwner {
-    (bool os, ) = payable(owner()).call{value: address(this).balance}("");
-    require(os);
-  }
+        isLit[tokenId] = true;
+        emit JointLit(tokenId);
+    }
+
+    function getLitStatus(uint256 tokenId) public view returns (bool) {
+        require(_exists(tokenId), "Query for nonexistent token");
+        return isLit[tokenId];
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+
+        string memory currentBase = isLit[tokenId] ? litBaseURI : baseURI;
+        return bytes(currentBase).length > 0
+            ? string(abi.encodePacked(currentBase, tokenId.toString(), baseExtension))
+            : "";
+    }
+
+    // Admin
+    function setBaseURI(string memory _newBaseURI) public onlyOwner {
+        baseURI = _newBaseURI;
+    }
+
+    function setLitBaseURI(string memory _newLitBaseURI) public onlyOwner {
+        litBaseURI = _newLitBaseURI;
+    }
+
+    function setPublicCost(uint256 _cost) public onlyOwner {
+        publicCost = _cost;
+    }
+
+    function pause(bool _state) public onlyOwner {
+        paused = _state;
+    }
+
+    function walletOfOwner(address _owner) public view returns (uint256[] memory) {
+        uint256 count = balanceOf(_owner);
+        uint256[] memory tokenIds = new uint256[](count);
+        for (uint256 i; i < count; i++) {
+            tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
+        }
+        return tokenIds;
+    }
+
+    function withdraw() public onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        require(success);
+    }
 }
