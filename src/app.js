@@ -240,6 +240,7 @@ const styles = {
     backgroundColor: '#075ad0',
     minHeight: '100vh',
     color: 'white',
+    overflowX: 'hidden',
   },
   title: {
     fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
