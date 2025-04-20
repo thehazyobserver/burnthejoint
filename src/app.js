@@ -206,6 +206,9 @@ const styles = {
     padding: '1rem',
     margin: '0 auto',
     fontFamily: 'Arial, sans-serif',
+    backgroundColor: '#075ad0',
+    minHeight: '100vh',
+    color: 'white',
   },
   title: {
     fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
@@ -228,5 +231,6 @@ const styles = {
     padding: '1rem',
     background: '#f0f0f0',
     borderRadius: '8px',
+    color: '#000',
   },
 };
