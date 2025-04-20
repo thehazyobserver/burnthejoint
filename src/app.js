@@ -193,7 +193,8 @@ export default function App() {
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>
-            <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
+            <p style={styles.leaderboardNote}>Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project</p>
+            <h2 style={styles.leaderboardTitle}>🏆 Lit Joint Leaderboard</h2>
             <ol style={styles.leaderboardList}>
               {leaderboard.map(({ rank, address, count }) => (
                 <li
@@ -262,6 +263,12 @@ const styles = {
     maxWidth: '600px',
     marginLeft: 'auto',
     marginRight: 'auto',
+  },
+  leaderboardNote: {
+    textAlign: 'center',
+    fontSize: '1rem',
+    marginBottom: '0.5rem',
+    fontWeight: '500',
   },
   leaderboardTitle: {
     textAlign: 'center',
