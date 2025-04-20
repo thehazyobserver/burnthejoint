@@ -21,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [totalMinted, setTotalMinted] = useState(0);
   const [totalLit, setTotalLit] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal({
@@ -95,6 +96,7 @@ export default function App() {
       await tx.wait();
       await fetchOwnedNFTs();
       await fetchTotals();
+      await fetchLeaderboard();
     } catch (err) {
       console.error(err);
     }
@@ -137,10 +139,37 @@ export default function App() {
     }
   };
 
+  const fetchLeaderboard = async () => {
+    if (!contract) return;
+    try {
+      const total = await contract.totalSupply();
+      const litMap = {};
+
+      for (let i = 1; i <= total; i++) {
+        try {
+          const isLit = await contract.getLitStatus(i);
+          if (isLit) {
+            const owner = await contract.ownerOf(i);
+            litMap[owner] = (litMap[owner] || 0) + 1;
+          }
+        } catch {}
+      }
+
+      const sorted = Object.entries(litMap)
+        .sort(([, a], [, b]) => b - a)
+        .map(([address, count], rank) => ({ rank: rank + 1, address, count }));
+
+      setLeaderboard(sorted);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (contract && account) {
       fetchOwnedNFTs();
       fetchTotals();
+      fetchLeaderboard();
     }
   }, [contract, account]);
 
@@ -155,6 +184,16 @@ export default function App() {
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
+          <div style={styles.leaderboard}>
+            <h2 style={{ textAlign: 'center' }}>🏆 Leaderboard</h2>
+            <ol>
+              {leaderboard.map(({ rank, address, count }) => (
+                <li key={rank}>
+                  {rank}. {address === account ? <strong>{address}</strong> : address} - {count} lit
+                </li>
+              ))}
+            </ol>
+          </div>
         </>
       )}
     </div>
@@ -183,5 +222,11 @@ const styles = {
     fontSize: '1rem',
     textAlign: 'center',
     marginBottom: '1rem',
+  },
+  leaderboard: {
+    marginTop: '2rem',
+    padding: '1rem',
+    background: '#f0f0f0',
+    borderRadius: '8px',
   },
 };
