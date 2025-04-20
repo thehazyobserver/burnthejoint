@@ -8,6 +8,7 @@ import NFTGallery from './components/NFTGallery';
 import litJointImg from './assets/images/litjoint.png';
 import unlitJointImg from './assets/images/unlitjoint.png';
 import xLogo from './assets/images/x.png';
+import paintswapLogo from './assets/images/paintswap.svg';
 
 const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
@@ -188,7 +189,7 @@ export default function App() {
           <img src={xLogo} alt="X" style={styles.icon} />
         </a>
         <a href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts" target="_blank" rel="noopener noreferrer">
-          <img src={unlitJointImg} alt="PaintSwap" style={styles.icon} />
+          <img src={paintswapLogo} alt="PaintSwap" style={styles.icon} />
         </a>
       </div>
       <h1 style={styles.title}>🔥 Light The Joint</h1>
