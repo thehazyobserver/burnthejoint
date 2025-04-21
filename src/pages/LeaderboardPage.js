@@ -18,7 +18,7 @@ export default function LeaderboardPage() {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
 
       const totalBN = await contract.totalSupply();
-      const total = totalBN.toNumber();
+      const total = Number(totalBN);
       const litMap = {};
       const batchSize = 250;
 

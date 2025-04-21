@@ -129,7 +129,7 @@ function MainPage() {
     if (!contract) return;
     try {
       const totalBN = await contract.totalSupply();
-      const total = totalBN.toNumber();
+      const total = Number(totalBN);
       setTotalMinted(total.toString());
 
       let lit = 0;
@@ -155,7 +155,7 @@ function MainPage() {
     if (!contract || !account) return;
     try {
       const totalBN = await contract.totalSupply();
-      const total = totalBN.toNumber();
+      const total = Number(totalBN);
       const litMap = {};
       const batchSize = 250;
       for (let i = 1; i <= total; i += batchSize) {
