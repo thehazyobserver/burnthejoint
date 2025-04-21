@@ -24,6 +24,7 @@ export default function App() {
   const [totalMinted, setTotalMinted] = useState(0);
   const [totalLit, setTotalLit] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [displayCount, setDisplayCount] = useState(50);
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal({
@@ -81,9 +82,7 @@ export default function App() {
     setLoading(true);
     try {
       const tx = await contract.mint({ value: ethers.parseEther('0') });
-      // Immediately re-enable UI after submission
       setLoading(false);
-      // Process confirmation in background
       tx.wait()
         .then(async () => {
           await fetchOwnedNFTs();
@@ -135,30 +134,23 @@ export default function App() {
   const fetchTotals = async () => {
     if (!contract) return;
     try {
-      // Fetch and set total minted immediately
       const totalBN = await contract.totalSupply();
       const total = totalBN.toNumber();
       setTotalMinted(total.toString());
 
-      // Now fetch total lit in batches without blocking the minted display
       let lit = 0;
       const batchSize = 500;
-      const litBatches = [];
       for (let i = 1; i <= total; i += batchSize) {
         const end = Math.min(total, i + batchSize - 1);
         const batchPromises = [];
         for (let j = i; j <= end; j++) {
           batchPromises.push(contract.getLitStatus(j));
         }
-        litBatches.push(Promise.allSettled(batchPromises));
-      }
-
-      const batchResults = await Promise.all(litBatches);
-      batchResults.forEach((batch) => {
-        batch.forEach((res) => {
+        const results = await Promise.allSettled(batchPromises);
+        results.forEach((res) => {
           if (res.status === 'fulfilled' && res.value === true) lit++;
         });
-      });
+      }
       setTotalLit(lit);
     } catch (err) {
       console.error(err);
@@ -171,13 +163,11 @@ export default function App() {
       const totalBN = await contract.totalSupply();
       const total = totalBN.toNumber();
       const litMap = {};
-      // Increased batch size here as well
       const batchSize = 250;
       for (let i = 1; i <= total; i += batchSize) {
         const end = Math.min(total, i + batchSize - 1);
         const statusPromises = [];
         for (let j = i; j <= end; j++) {
-          // For each token, only get its owner if lit
           statusPromises.push(
             contract.getLitStatus(j)
               .then((isLit) => (isLit ? j : null))
@@ -251,7 +241,7 @@ export default function App() {
             </p>
             <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
             <ol style={styles.leaderboardList}>
-              {leaderboard.map(({ rank, address, count }) => (
+              {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => (
                 <li
                   key={rank}
                   style={{
@@ -266,9 +256,20 @@ export default function App() {
                   <span style={styles.addressText}>{address}</span>{' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
-  );          ))}
-}           </ol>
+              ))}
+            </ol>
+            {leaderboard.length > displayCount && (
+              <button style={styles.loadMoreBtn} onClick={() => setDisplayCount(displayCount + 50)}>
+                Load More
+              </button>
+            )}
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 const styles = {
   container: {
     maxWidth: '100%',
@@ -277,89 +278,93 @@ const styles = {
     fontFamily: 'Arial, sans-serif',
     backgroundColor: '#075ad0',
     minHeight: '100vh',
-    color: 'white',',
-  },padding: '1rem',
-  title: {: 0,
+    color: 'white',
+  },
+  title: {
     fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
-    textAlign: 'center',75ad0',
+    textAlign: 'center',
     marginBottom: '1rem',
-  },color: 'white',
+  },
   address: {
     fontSize: '0.9rem',
-    textAlign: 'center',rem, 6vw, 2.5rem)',
+    textAlign: 'center',
     marginBottom: '0.5rem',
     wordBreak: 'break-word',
   },
-  stats: { {
-    fontSize: '1rem',',
+  stats: {
+    fontSize: '1rem',
     textAlign: 'center',
-    marginBottom: '1rem',',
-  },wordBreak: 'break-word',
+    marginBottom: '1rem',
+  },
   mintNote: {
     fontSize: '1rem',
     textAlign: 'center',
     marginBottom: '1rem',
-    fontWeight: '500',m',
+    fontWeight: '500',
   },
   leaderboard: {
     marginTop: '2rem',
-    padding: '1rem',er',
+    padding: '1rem',
     background: '#f0f0f0',
     borderRadius: '8px',
     color: '#000',
     maxWidth: '600px',
     marginLeft: 'auto',
     marginRight: 'auto',
-  },background: '#f0f0f0',
-  leaderboardNote: {px',
+  },
+  leaderboardNote: {
     textAlign: 'center',
-    fontSize: '1rem',,
+    fontSize: '1rem',
     marginBottom: '0.5rem',
-    fontWeight: '500',',
+    fontWeight: '500',
   },
   leaderboardTitle: {
     textAlign: 'center',
     fontSize: '1.5rem',
-    marginBottom: '1rem',',
-  },fontWeight: '500',
+    marginBottom: '1rem',
+  },
   leaderboardList: {
     listStyle: 'none',
-    paddingLeft: 0,ter',
-  },fontSize: '1.5rem',
-  leaderboardItem: {rem',
+    paddingLeft: 0,
+    fontSize: '1.5rem',
+  },
+  leaderboardItem: {
     marginBottom: '0.5rem',
     display: 'flex',
     alignItems: 'center',
-  },paddingLeft: 0,
+  },
   rank: {
     fontWeight: 'bold',
-    marginRight: '0.5rem',,
-    width: '3rem',',
-  },alignItems: 'center',
+    marginRight: '0.5rem',
+    width: '3rem',
+  },
   addressText: {
     flexGrow: 1,
     overflowWrap: 'anywhere',
-  },marginRight: '0.5rem',
-  count: { '3rem',
+    marginRight: '0.5rem',
+  },
+  count: {
     fontWeight: 'bold',
-  },dressText: {
-  linksTop: { 1,
-    display: 'flex',nywhere',
+  },
+  linksTop: {
+    display: 'flex',
     justifyContent: 'center',
     gap: '1rem',
     marginBottom: '1rem',
   },
-  icon: {p: {
-    width: '40px',',
-    height: '40px', 'center',
-    borderRadius: '8px',
-    background: 'white',,
-    padding: '5px',
-  },on: {
-};  width: '40px',
+  icon: {
+    width: '40px',
     height: '40px',
     borderRadius: '8px',
     background: 'white',
     padding: '5px',
+  },
+  loadMoreBtn: {
+    display: 'block',
+    margin: '1rem auto 0',
+    padding: '0.5rem 1rem',
+    fontSize: '1rem',
+    borderRadius: '4px',
+    cursor: 'pointer',
   },
 };
