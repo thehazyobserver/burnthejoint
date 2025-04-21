@@ -237,7 +237,7 @@ function MainPage() {
           )}
 
           <p style={styles.mintNote}>
-            The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
+            Mint 1 FREE JOINT NFT per tx. No limits! Mint as many as you can, light them & climb the leaderboard! Don't wait!
           </p>
           <div style={styles.pageLinkWrapper}>
             <Link to="/leaderboard" style={styles.pageLink}>
