@@ -27,10 +27,7 @@ function MainPage() {
   const [walletRank, setWalletRank] = useState(null);
 
   const connectWallet = async () => {
-    const web3Modal = new Web3Modal({
-      cacheProvider: false,
-      providerOptions: {},
-    });
+    const web3Modal = new Web3Modal({ cacheProvider: false, providerOptions: {} });
     const connection = await web3Modal.connect();
     const provider = new ethers.BrowserProvider(connection);
     const network = await provider.getNetwork();
@@ -83,13 +80,11 @@ function MainPage() {
     try {
       const tx = await contract.mint({ value: ethers.parseEther('0') });
       setLoading(false);
-      tx.wait()
-        .then(async () => {
-          await fetchOwnedNFTs();
-          await fetchTotals();
-          await fetchWalletRanking();
-        })
-        .catch((err) => console.error('TX error:', err));
+      tx.wait().then(async () => {
+        await fetchOwnedNFTs();
+        await fetchTotals();
+        await fetchWalletRanking();
+      }).catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -102,13 +97,11 @@ function MainPage() {
     try {
       const tx = await contract.lightTheJoint(tokenId);
       setLoading(false);
-      tx.wait()
-        .then(async () => {
-          await fetchOwnedNFTs();
-          await fetchTotals();
-          await fetchWalletRanking();
-        })
-        .catch((err) => console.error('TX error:', err));
+      tx.wait().then(async () => {
+        await fetchOwnedNFTs();
+        await fetchTotals();
+        await fetchWalletRanking();
+      }).catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
       setLoading(false);
@@ -170,10 +163,7 @@ function MainPage() {
         const statusPromises = [];
         for (let j = i; j <= end; j++) {
           statusPromises.push(
-            contract
-              .getLitStatus(j)
-              .then((isLit) => (isLit ? j : null))
-              .catch(() => null)
+            contract.getLitStatus(j).then((isLit) => (isLit ? j : null)).catch(() => null)
           );
         }
         const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
@@ -234,12 +224,12 @@ function MainPage() {
           <p style={styles.mintNote}>
             The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
           </p>
-          <MintButton onMint={mint} loading={loading} />
           <div style={styles.pageLinkWrapper}>
             <Link to="/leaderboard" style={styles.pageLink}>
-              View Leaderboard
+              🏆 View Leaderboard
             </Link>
           </div>
+          <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
         </>
       )}
@@ -297,6 +287,7 @@ const styles = {
   pageLinkWrapper: {
     textAlign: 'center',
     marginTop: '2rem',
+    marginBottom: '1rem',
   },
   pageLink: {
     padding: '0.5rem 1rem',
