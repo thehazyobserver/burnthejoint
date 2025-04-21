@@ -236,12 +236,12 @@ export default function App() {
             The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
           </p>
           <MintButton onMint={mint} loading={loading} />
-          <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.pageLinkWrapper}>
             <a href="/leaderboard" style={styles.pageLink}>
               View Leaderboard
             </a>
           </div>
+          <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
         </>
       )}
     </div>
