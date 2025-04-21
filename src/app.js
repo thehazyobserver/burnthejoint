@@ -23,8 +23,6 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [totalMinted, setTotalMinted] = useState(0);
   const [totalLit, setTotalLit] = useState(0);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [displayCount, setDisplayCount] = useState(50);
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal({
@@ -105,7 +103,6 @@ export default function App() {
         .then(async () => {
           await fetchOwnedNFTs();
           await fetchTotals();
-          await fetchLeaderboard();
         })
         .catch((err) => console.error('TX error:', err));
     } catch (err) {
@@ -157,57 +154,12 @@ export default function App() {
     }
   };
 
-  const fetchLeaderboard = async () => {
-    if (!contract) return;
-    try {
-      const totalBN = await contract.totalSupply();
-      const total = totalBN.toNumber();
-      const litMap = {};
-      const batchSize = 250;
-      for (let i = 1; i <= total; i += batchSize) {
-        const end = Math.min(total, i + batchSize - 1);
-        const statusPromises = [];
-        for (let j = i; j <= end; j++) {
-          statusPromises.push(
-            contract.getLitStatus(j)
-              .then((isLit) => (isLit ? j : null))
-              .catch(() => null)
-          );
-        }
-        const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
-        if (litTokenIds.length) {
-          const ownerPromises = litTokenIds.map((id) =>
-            contract.ownerOf(id).catch(() => null)
-          );
-          const owners = await Promise.all(ownerPromises);
-          owners.forEach((owner) => {
-            if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
-          });
-        }
-      }
-      const sorted = Object.entries(litMap)
-        .sort(([, a], [, b]) => b - a)
-        .map(([address, count], index) => ({ rank: index + 1, address, count }));
-      setLeaderboard(sorted);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
     if (contract && account) {
       fetchOwnedNFTs();
       fetchTotals();
-      fetchLeaderboard();
     }
   }, [contract, account]);
-
-  const getRankIcon = (rank) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return `#${rank}`;
-  };
 
   return (
     <div style={styles.container}>
@@ -235,40 +187,17 @@ export default function App() {
           </p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
-          <div style={styles.leaderboard}>
-            <p style={styles.leaderboardNote}>
-              Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project
-            </p>
-            <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
-            <ol style={styles.leaderboardList}>
-              {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => (
-                <li
-                  key={rank}
-                  style={{
-                    ...styles.leaderboardItem,
-                    backgroundColor: address === account ? '#d0e6ff' : 'transparent',
-                    fontWeight: address === account ? 'bold' : 'normal',
-                    borderRadius: '6px',
-                    padding: '0.3rem 0.5rem',
-                  }}
-                >
-                  <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
-                  <span style={styles.addressText}>{address}</span>{' '}
-                  <span style={styles.count}>{count} lit</span>
-                </li>
-              ))}
-            </ol>
-            {leaderboard.length > displayCount && (
-              <button style={styles.loadMoreBtn} onClick={() => setDisplayCount(displayCount + 50)}>
-                Load More
-              </button>
-            )}
+          <div style={styles.pageLinkWrapper}>
+            <a href="/leaderboard" style={styles.pageLink}>
+              View Leaderboard
+            </a>
           </div>
         </>
       )}
     </div>
   );
 }
+
 const styles = {
   container: {
     maxWidth: '100%',
@@ -301,50 +230,6 @@ const styles = {
     marginBottom: '1rem',
     fontWeight: '500',
   },
-  leaderboard: {
-    marginTop: '2rem',
-    padding: '1rem',
-    background: '#f0f0f0',
-    borderRadius: '8px',
-    color: '#000',
-    maxWidth: '600px',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  leaderboardNote: {
-    textAlign: 'center',
-    fontSize: '1rem',
-    marginBottom: '0.5rem',
-    fontWeight: '500',
-  },
-  leaderboardTitle: {
-    textAlign: 'center',
-    fontSize: '1.5rem',
-    marginBottom: '1rem',
-  },
-  leaderboardList: {
-    listStyle: 'none',
-    paddingLeft: 0,
-    fontSize: '1.5rem',
-  },
-  leaderboardItem: {
-    marginBottom: '0.5rem',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  rank: {
-    fontWeight: 'bold',
-    marginRight: '0.5rem',
-    width: '3rem',
-  },
-  addressText: {
-    flexGrow: 1,
-    overflowWrap: 'anywhere',
-    marginRight: '0.5rem',
-  },
-  count: {
-    fontWeight: 'bold',
-  },
   linksTop: {
     display: 'flex',
     justifyContent: 'center',
@@ -358,12 +243,16 @@ const styles = {
     background: 'white',
     padding: '5px',
   },
-  loadMoreBtn: {
-    display: 'block',
-    margin: '1rem auto 0',
+  pageLinkWrapper: {
+    textAlign: 'center',
+    marginTop: '2rem',
+  },
+  pageLink: {
     padding: '0.5rem 1rem',
-    fontSize: '1rem',
+    background: '#fff',
+    color: '#075ad0',
     borderRadius: '4px',
-    cursor: 'pointer',
+    textDecoration: 'none',
+    fontWeight: 'bold',
   },
 };
