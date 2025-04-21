@@ -217,7 +217,7 @@ export default function LeaderboardPage() {
       <div style={styles.leaderboard}>
         <ol style={styles.leaderboardList}>
           {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => {
-            const isUser = walletAddress && address === walletAddress;
+            const isUser = walletAddress && address.toLowerCase() === walletAddress.toLowerCase();
             return (
               <li key={rank} style={{
                 ...styles.leaderboardItem,
