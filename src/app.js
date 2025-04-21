@@ -81,13 +81,19 @@ export default function App() {
     setLoading(true);
     try {
       const tx = await contract.mint({ value: ethers.parseEther('0') });
-      await tx.wait();
-      await fetchOwnedNFTs();
-      await fetchTotals();
+      // Stop blocking immediately after tx submission
+      setLoading(false);
+      // Process confirmation without blocking UI
+      tx.wait()
+        .then(async () => {
+          await fetchOwnedNFTs();
+          await fetchTotals();
+        })
+        .catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const lightJoint = async (tokenId) => {
@@ -95,14 +101,18 @@ export default function App() {
     setLoading(true);
     try {
       const tx = await contract.lightTheJoint(tokenId);
-      await tx.wait();
-      await fetchOwnedNFTs();
-      await fetchTotals();
-      await fetchLeaderboard();
+      setLoading(false);
+      tx.wait()
+        .then(async () => {
+          await fetchOwnedNFTs();
+          await fetchTotals();
+          await fetchLeaderboard();
+        })
+        .catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchOwnedNFTs = async () => {
