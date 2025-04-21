@@ -23,6 +23,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [totalMinted, setTotalMinted] = useState(0);
   const [totalLit, setTotalLit] = useState(0);
+  const [walletRank, setWalletRank] = useState(null);
 
   const connectWallet = async () => {
     const web3Modal = new Web3Modal({
@@ -85,6 +86,7 @@ export default function App() {
         .then(async () => {
           await fetchOwnedNFTs();
           await fetchTotals();
+          await fetchWalletRanking();
         })
         .catch((err) => console.error('TX error:', err));
     } catch (err) {
@@ -103,6 +105,7 @@ export default function App() {
         .then(async () => {
           await fetchOwnedNFTs();
           await fetchTotals();
+          await fetchWalletRanking();
         })
         .catch((err) => console.error('TX error:', err));
     } catch (err) {
@@ -154,10 +157,52 @@ export default function App() {
     }
   };
 
+  const fetchWalletRanking = async () => {
+    if (!contract || !account) return;
+    try {
+      const totalBN = await contract.totalSupply();
+      const total = totalBN.toNumber();
+      const litMap = {};
+      const batchSize = 250;
+      for (let i = 1; i <= total; i += batchSize) {
+        const end = Math.min(total, i + batchSize - 1);
+        const statusPromises = [];
+        for (let j = i; j <= end; j++) {
+          statusPromises.push(
+            contract
+              .getLitStatus(j)
+              .then((isLit) => (isLit ? j : null))
+              .catch(() => null)
+          );
+        }
+        const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
+        if (litTokenIds.length) {
+          const ownerPromises = litTokenIds.map((id) =>
+            contract.ownerOf(id).catch(() => null)
+          );
+          const owners = await Promise.all(ownerPromises);
+          owners.forEach((owner) => {
+            if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+          });
+        }
+      }
+      const sorted = Object.entries(litMap)
+        .sort(([, a], [, b]) => b - a)
+        .map(([address, count], index) => ({ rank: index + 1, address, count }));
+      const walletEntry = sorted.find(
+        (entry) => entry.address.toLowerCase() === account.toLowerCase()
+      );
+      setWalletRank(walletEntry ? walletEntry.rank : '-');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (contract && account) {
       fetchOwnedNFTs();
       fetchTotals();
+      fetchWalletRanking();
     }
   }, [contract, account]);
 
@@ -182,6 +227,11 @@ export default function App() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
+          {walletRank && (
+            <p style={styles.stats}>
+              Your Ranking: {walletRank}
+            </p>
+          )}
           <p style={styles.mintNote}>
             The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
           </p>
