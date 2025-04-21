@@ -12,6 +12,7 @@ import {
   OwnershipTransferred,
   Transfer
 } from "../generated/schema"
+import { LIGHTTHEJOINT } from "../generated/LIGHTTHEJOINT/LIGHTTHEJOINT";
 
 export function handleApproval(event: ApprovalEvent): void {
   let entity = new Approval(
@@ -46,14 +47,20 @@ export function handleApprovalForAll(event: ApprovalForAllEvent): void {
 export function handleJointLit(event: JointLitEvent): void {
   let entity = new JointLit(
     event.transaction.hash.concatI32(event.logIndex.toI32())
-  )
-  entity.tokenId = event.params.tokenId
+  );
+  entity.tokenId = event.params.tokenId;
+  entity.blockNumber = event.block.number;
+  entity.blockTimestamp = event.block.timestamp;
+  entity.transactionHash = event.transaction.hash;
 
-  entity.blockNumber = event.block.number
-  entity.blockTimestamp = event.block.timestamp
-  entity.transactionHash = event.transaction.hash
+  // Fetch owner of the token
+  let contract = LIGHTTHEJOINT.bind(event.address);
+  let ownerResult = contract.try_ownerOf(event.params.tokenId);
+  if (!ownerResult.reverted) {
+    entity.owner = ownerResult.value;
+  }
 
-  entity.save()
+  entity.save();
 }
 
 export function handleOwnershipTransferred(

@@ -20,11 +20,13 @@ type ApprovalForAll @entity(immutable: true) {
 
 type JointLit @entity(immutable: true) {
   id: Bytes!
-  tokenId: BigInt! # uint256
+  tokenId: BigInt!
+  owner: Bytes!
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
 
 type OwnershipTransferred @entity(immutable: true) {
   id: Bytes!
