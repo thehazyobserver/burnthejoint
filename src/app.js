@@ -135,24 +135,30 @@ export default function App() {
   const fetchTotals = async () => {
     if (!contract) return;
     try {
+      // Fetch and set total minted immediately
       const totalBN = await contract.totalSupply();
       const total = totalBN.toNumber();
       setTotalMinted(total.toString());
 
+      // Now fetch total lit in batches without blocking the minted display
       let lit = 0;
-      // Increased batch size for fewer RPC calls
       const batchSize = 500;
+      const litBatches = [];
       for (let i = 1; i <= total; i += batchSize) {
         const end = Math.min(total, i + batchSize - 1);
         const batchPromises = [];
         for (let j = i; j <= end; j++) {
           batchPromises.push(contract.getLitStatus(j));
         }
-        const results = await Promise.allSettled(batchPromises);
-        results.forEach((res) => {
+        litBatches.push(Promise.allSettled(batchPromises));
+      }
+
+      const batchResults = await Promise.all(litBatches);
+      batchResults.forEach((batch) => {
+        batch.forEach((res) => {
           if (res.status === 'fulfilled' && res.value === true) lit++;
         });
-      }
+      });
       setTotalLit(lit);
     } catch (err) {
       console.error(err);
@@ -260,15 +266,9 @@ export default function App() {
                   <span style={styles.addressText}>{address}</span>{' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
-              ))}
-            </ol>
+  );          ))}
+}           </ol>
           </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 const styles = {
   container: {
     maxWidth: '100%',
@@ -277,80 +277,86 @@ const styles = {
     fontFamily: 'Arial, sans-serif',
     backgroundColor: '#075ad0',
     minHeight: '100vh',
-    color: 'white',
-  },
-  title: {
+    color: 'white',',
+  },padding: '1rem',
+  title: {: 0,
     fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
-    textAlign: 'center',
+    textAlign: 'center',75ad0',
     marginBottom: '1rem',
-  },
+  },color: 'white',
   address: {
     fontSize: '0.9rem',
-    textAlign: 'center',
+    textAlign: 'center',rem, 6vw, 2.5rem)',
     marginBottom: '0.5rem',
     wordBreak: 'break-word',
   },
-  stats: {
-    fontSize: '1rem',
+  stats: { {
+    fontSize: '1rem',',
     textAlign: 'center',
-    marginBottom: '1rem',
-  },
+    marginBottom: '1rem',',
+  },wordBreak: 'break-word',
   mintNote: {
     fontSize: '1rem',
     textAlign: 'center',
     marginBottom: '1rem',
-    fontWeight: '500',
+    fontWeight: '500',m',
   },
   leaderboard: {
     marginTop: '2rem',
-    padding: '1rem',
+    padding: '1rem',er',
     background: '#f0f0f0',
     borderRadius: '8px',
     color: '#000',
     maxWidth: '600px',
     marginLeft: 'auto',
     marginRight: 'auto',
-  },
-  leaderboardNote: {
+  },background: '#f0f0f0',
+  leaderboardNote: {px',
     textAlign: 'center',
-    fontSize: '1rem',
+    fontSize: '1rem',,
     marginBottom: '0.5rem',
-    fontWeight: '500',
+    fontWeight: '500',',
   },
   leaderboardTitle: {
     textAlign: 'center',
     fontSize: '1.5rem',
-    marginBottom: '1rem',
-  },
+    marginBottom: '1rem',',
+  },fontWeight: '500',
   leaderboardList: {
     listStyle: 'none',
-    paddingLeft: 0,
-  },
-  leaderboardItem: {
+    paddingLeft: 0,ter',
+  },fontSize: '1.5rem',
+  leaderboardItem: {rem',
     marginBottom: '0.5rem',
     display: 'flex',
     alignItems: 'center',
-  },
+  },paddingLeft: 0,
   rank: {
     fontWeight: 'bold',
-    marginRight: '0.5rem',
-    width: '3rem',
-  },
+    marginRight: '0.5rem',,
+    width: '3rem',',
+  },alignItems: 'center',
   addressText: {
     flexGrow: 1,
     overflowWrap: 'anywhere',
-  },
-  count: {
+  },marginRight: '0.5rem',
+  count: { '3rem',
     fontWeight: 'bold',
-  },
-  linksTop: {
-    display: 'flex',
+  },dressText: {
+  linksTop: { 1,
+    display: 'flex',nywhere',
     justifyContent: 'center',
     gap: '1rem',
     marginBottom: '1rem',
   },
-  icon: {
-    width: '40px',
+  icon: {p: {
+    width: '40px',',
+    height: '40px', 'center',
+    borderRadius: '8px',
+    background: 'white',,
+    padding: '5px',
+  },on: {
+};  width: '40px',
     height: '40px',
     borderRadius: '8px',
     background: 'white',
