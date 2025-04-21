@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
 
-export default function LeaderboardPage({ contract, account }) {
+const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
+const SONIC_RPC = 'https://sonic.drpc.org';
+const contractABI = require('../abi/LIGHTTHEJOINT.json');
+
+export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [displayCount, setDisplayCount] = useState(50);
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [walletRank, setWalletRank] = useState(null);
 
   const fetchLeaderboard = async () => {
-    if (!contract) return;
     try {
+      const provider = new ethers.JsonRpcProvider(SONIC_RPC);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
+
       const totalBN = await contract.totalSupply();
       const total = totalBN.toNumber();
       const litMap = {};
       const batchSize = 250;
+
       for (let i = 1; i <= total; i += batchSize) {
         const end = Math.min(total, i + batchSize - 1);
         const statusPromises = [];
@@ -23,6 +33,7 @@ export default function LeaderboardPage({ contract, account }) {
               .catch(() => null)
           );
         }
+
         const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
         if (litTokenIds.length) {
           const ownerPromises = litTokenIds.map((id) =>
@@ -30,22 +41,41 @@ export default function LeaderboardPage({ contract, account }) {
           );
           const owners = await Promise.all(ownerPromises);
           owners.forEach((owner) => {
-            if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+            if (owner) litMap[owner.toLowerCase()] = (litMap[owner.toLowerCase()] || 0) + 1;
           });
         }
       }
+
       const sorted = Object.entries(litMap)
         .sort(([, a], [, b]) => b - a)
         .map(([address, count], index) => ({ rank: index + 1, address, count }));
+
       setLeaderboard(sorted);
+
+      if (walletAddress) {
+        const entry = sorted.find(
+          (entry) => entry.address.toLowerCase() === walletAddress.toLowerCase()
+        );
+        if (entry) setWalletRank(entry.rank);
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
+  const detectWallet = async () => {
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      setWalletAddress(window.ethereum.selectedAddress.toLowerCase());
+    }
+  };
+
   useEffect(() => {
-    if (contract) fetchLeaderboard();
-  }, [contract]);
+    detectWallet();
+  }, []);
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [walletAddress]);
 
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇';
@@ -109,30 +139,54 @@ export default function LeaderboardPage({ contract, account }) {
       borderRadius: '4px',
       cursor: 'pointer',
     },
+    backLink: {
+      display: 'block',
+      textAlign: 'center',
+      marginBottom: '1rem',
+      textDecoration: 'none',
+      fontWeight: 'bold',
+      color: '#075ad0',
+    },
+    yourRankText: {
+      textAlign: 'center',
+      fontSize: '1.25rem',
+      marginBottom: '1rem',
+      fontWeight: '600',
+      color: '#000',
+    },
   };
 
   return (
     <div style={{ padding: '1rem' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '1rem' }}>🏆 Leaderboard</h1>
+      <Link to="/" style={styles.backLink}>← Back to Mint</Link>
+      <h1 style={styles.leaderboardTitle}>🏆 Leaderboard</h1>
+      {walletAddress && walletRank && (
+        <p style={styles.yourRankText}>
+          Your Wallet Rank: {getRankIcon(walletRank)}
+        </p>
+      )}
       <p style={styles.leaderboardNote}>
         Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project
       </p>
       <div style={styles.leaderboard}>
         <ol style={styles.leaderboardList}>
-          {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => (
-            <li
-              key={rank}
-              style={{
-                ...styles.leaderboardItem,
-                backgroundColor: address === account ? '#d0e6ff' : 'transparent',
-                fontWeight: address === account ? 'bold' : 'normal',
-              }}
-            >
-              <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
-              <span style={styles.addressText}>{address}</span>{' '}
-              <span style={styles.count}>{count} lit</span>
-            </li>
-          ))}
+          {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => {
+            const isUser = address.toLowerCase() === walletAddress;
+            return (
+              <li
+                key={rank}
+                style={{
+                  ...styles.leaderboardItem,
+                  backgroundColor: isUser ? '#d0e6ff' : 'transparent',
+                  fontWeight: isUser ? 'bold' : 'normal',
+                }}
+              >
+                <span style={styles.rank}>{getRankIcon(rank)}</span>
+                <span style={styles.addressText}>{address}</span>
+                <span style={styles.count}>{count} lit</span>
+              </li>
+            );
+          })}
         </ol>
         {leaderboard.length > displayCount && (
           <button
