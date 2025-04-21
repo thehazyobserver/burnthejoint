@@ -11,39 +11,37 @@ export default function LeaderboardPage() {
   const [displayCount, setDisplayCount] = useState(50);
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletRank, setWalletRank] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const fetchLeaderboard = async (detectedWallet = null) => {
+    setLoading(true);
     try {
       const provider = new ethers.JsonRpcProvider(SONIC_RPC);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
-
-      const totalBN = await contract.totalSupply();
-      const total = Number(totalBN);
-      const litMap = {};
+      const total = Number(await contract.totalSupply());
       const batchSize = 250;
+      const litMap = {};
 
       for (let i = 1; i <= total; i += batchSize) {
-        const end = Math.min(total, i + batchSize - 1);
-        const statusPromises = [];
-        for (let j = i; j <= end; j++) {
-          statusPromises.push(
-            contract
-              .getLitStatus(j)
-              .then((isLit) => (isLit ? j : null))
-              .catch(() => null)
-          );
-        }
+        const end = Math.min(i + batchSize - 1, total);
+        const ids = Array.from({ length: end - i + 1 }, (_, idx) => i + idx);
 
-        const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
-        if (litTokenIds.length) {
-          const ownerPromises = litTokenIds.map((id) =>
-            contract.ownerOf(id).catch(() => null)
-          );
-          const owners = await Promise.all(ownerPromises);
-          owners.forEach((owner) => {
-            if (owner) litMap[owner.toLowerCase()] = (litMap[owner.toLowerCase()] || 0) + 1;
-          });
-        }
+        const statusResults = await Promise.allSettled(
+          ids.map(id => contract.getLitStatus(id).then(res => res ? id : null))
+        );
+        const litTokenIds = statusResults
+          .map(res => res.status === 'fulfilled' ? res.value : null)
+          .filter(Boolean);
+
+        const ownerResults = await Promise.allSettled(
+          litTokenIds.map(id => contract.ownerOf(id).catch(() => null))
+        );
+        ownerResults.forEach(res => {
+          if (res.status === 'fulfilled' && res.value) {
+            const owner = res.value.toLowerCase();
+            litMap[owner] = (litMap[owner] || 0) + 1;
+          }
+        });
       }
 
       const sorted = Object.entries(litMap)
@@ -53,14 +51,13 @@ export default function LeaderboardPage() {
       setLeaderboard(sorted);
 
       if (detectedWallet) {
-        const entry = sorted.find(
-          (entry) => entry.address.toLowerCase() === detectedWallet.toLowerCase()
-        );
+        const entry = sorted.find(e => e.address === detectedWallet.toLowerCase());
         if (entry) setWalletRank(entry.rank);
       }
     } catch (err) {
       console.error(err);
     }
+    setLoading(false);
   };
 
   const detectWallet = async () => {
@@ -72,7 +69,7 @@ export default function LeaderboardPage() {
         fetchLeaderboard(wallet);
       }
     } else {
-      alert('MetaMask not found. Please install it to connect your wallet.');
+      alert('MetaMask not found. Please install it.');
     }
   };
 
@@ -82,7 +79,7 @@ export default function LeaderboardPage() {
       setWalletAddress(wallet);
       fetchLeaderboard(wallet);
     } else {
-      fetchLeaderboard(null); // still fetch leaderboard for read-only view
+      fetchLeaderboard(null);
     }
   }, []);
 
@@ -97,7 +94,6 @@ export default function LeaderboardPage() {
     container: {
       maxWidth: '100%',
       padding: '1rem',
-      margin: 0,
       fontFamily: 'Arial, sans-serif',
       backgroundColor: '#075ad0',
       minHeight: '100vh',
@@ -108,23 +104,22 @@ export default function LeaderboardPage() {
       padding: '1rem',
       background: '#ffffff11',
       borderRadius: '8px',
-      color: 'white',
       maxWidth: '95%',
       width: '600px',
       marginLeft: 'auto',
       marginRight: 'auto',
-    },
-    leaderboardNote: {
-      textAlign: 'center',
-      fontSize: '1rem',
-      marginBottom: '0.5rem',
-      fontWeight: '500',
     },
     leaderboardTitle: {
       textAlign: 'center',
       fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
       marginBottom: '1rem',
       fontWeight: 'bold',
+    },
+    yourRankText: {
+      textAlign: 'center',
+      fontSize: '1.25rem',
+      marginBottom: '1rem',
+      fontWeight: '600',
     },
     leaderboardList: {
       listStyle: 'none',
@@ -154,15 +149,14 @@ export default function LeaderboardPage() {
     },
     loadMoreBtn: {
       display: 'block',
-      margin: '1rem auto 0',
+      margin: '1rem auto',
       padding: '0.5rem 1rem',
-      fontSize: '1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
       backgroundColor: 'white',
       color: '#075ad0',
+      borderRadius: '4px',
       fontWeight: 'bold',
       border: 'none',
+      cursor: 'pointer',
     },
     backLink: {
       display: 'block',
@@ -170,13 +164,6 @@ export default function LeaderboardPage() {
       marginBottom: '1rem',
       textDecoration: 'none',
       fontWeight: 'bold',
-      color: 'white',
-    },
-    yourRankText: {
-      textAlign: 'center',
-      fontSize: '1.25rem',
-      marginBottom: '1rem',
-      fontWeight: '600',
       color: 'white',
     },
     connectBtn: {
@@ -210,24 +197,17 @@ export default function LeaderboardPage() {
         </p>
       )}
 
-      <p style={styles.leaderboardNote}>
-        Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project
-      </p>
-
       <div style={styles.leaderboard}>
         <ol style={styles.leaderboardList}>
           {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => {
-            const isUser = walletAddress && address.toLowerCase() === walletAddress;
+            const isUser = walletAddress && address === walletAddress;
             return (
-              <li
-                key={rank}
-                style={{
-                  ...styles.leaderboardItem,
-                  backgroundColor: isUser ? '#d0e6ff' : 'transparent',
-                  fontWeight: isUser ? 'bold' : 'normal',
-                  color: isUser ? '#000' : 'white',
-                }}
-              >
+              <li key={rank} style={{
+                ...styles.leaderboardItem,
+                backgroundColor: isUser ? '#d0e6ff' : 'transparent',
+                color: isUser ? '#000' : 'white',
+                fontWeight: isUser ? 'bold' : 'normal'
+              }}>
                 <span style={styles.rank}>{getRankIcon(rank)}</span>
                 <span style={styles.addressText}>{address}</span>
                 <span style={styles.count}>{count} lit</span>
@@ -237,10 +217,7 @@ export default function LeaderboardPage() {
         </ol>
 
         {leaderboard.length > displayCount && (
-          <button
-            style={styles.loadMoreBtn}
-            onClick={() => setDisplayCount(displayCount + 50)}
-          >
+          <button style={styles.loadMoreBtn} onClick={() => setDisplayCount(displayCount + 50)}>
             Load More
           </button>
         )}
