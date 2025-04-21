@@ -94,13 +94,23 @@ export default function LeaderboardPage() {
   };
 
   const styles = {
+    container: {
+      maxWidth: '100%',
+      padding: '1rem',
+      margin: 0,
+      fontFamily: 'Arial, sans-serif',
+      backgroundColor: '#075ad0',
+      minHeight: '100vh',
+      color: 'white',
+    },
     leaderboard: {
       marginTop: '2rem',
       padding: '1rem',
-      background: '#f0f0f0',
+      background: '#ffffff11',
       borderRadius: '8px',
-      color: '#000',
-      maxWidth: '600px',
+      color: 'white',
+      maxWidth: '95%',
+      width: '600px',
       marginLeft: 'auto',
       marginRight: 'auto',
     },
@@ -112,17 +122,19 @@ export default function LeaderboardPage() {
     },
     leaderboardTitle: {
       textAlign: 'center',
-      fontSize: '1.5rem',
+      fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
       marginBottom: '1rem',
+      fontWeight: 'bold',
     },
     leaderboardList: {
       listStyle: 'none',
       paddingLeft: 0,
-      fontSize: '1.5rem',
+      fontSize: '1.1rem',
     },
     leaderboardItem: {
       marginBottom: '0.5rem',
       display: 'flex',
+      flexWrap: 'wrap',
       alignItems: 'center',
       borderRadius: '6px',
       padding: '0.3rem 0.5rem',
@@ -130,11 +142,11 @@ export default function LeaderboardPage() {
     rank: {
       fontWeight: 'bold',
       marginRight: '0.5rem',
-      width: '3rem',
+      minWidth: '3rem',
     },
     addressText: {
       flexGrow: 1,
-      overflowWrap: 'anywhere',
+      wordBreak: 'break-word',
       marginRight: '0.5rem',
     },
     count: {
@@ -147,6 +159,10 @@ export default function LeaderboardPage() {
       fontSize: '1rem',
       borderRadius: '4px',
       cursor: 'pointer',
+      backgroundColor: 'white',
+      color: '#075ad0',
+      fontWeight: 'bold',
+      border: 'none',
     },
     backLink: {
       display: 'block',
@@ -154,14 +170,14 @@ export default function LeaderboardPage() {
       marginBottom: '1rem',
       textDecoration: 'none',
       fontWeight: 'bold',
-      color: '#075ad0',
+      color: 'white',
     },
     yourRankText: {
       textAlign: 'center',
       fontSize: '1.25rem',
       marginBottom: '1rem',
       fontWeight: '600',
-      color: '#000',
+      color: 'white',
     },
     connectBtn: {
       display: 'block',
@@ -169,8 +185,8 @@ export default function LeaderboardPage() {
       padding: '0.5rem 1rem',
       fontSize: '1rem',
       fontWeight: 'bold',
-      color: '#fff',
-      backgroundColor: '#075ad0',
+      color: '#075ad0',
+      backgroundColor: 'white',
       border: 'none',
       borderRadius: '5px',
       cursor: 'pointer',
@@ -178,7 +194,7 @@ export default function LeaderboardPage() {
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={styles.container}>
       <Link to="/" style={styles.backLink}>← Back to Mint</Link>
       <h1 style={styles.leaderboardTitle}>🏆 Leaderboard</h1>
 
@@ -209,6 +225,7 @@ export default function LeaderboardPage() {
                   ...styles.leaderboardItem,
                   backgroundColor: isUser ? '#d0e6ff' : 'transparent',
                   fontWeight: isUser ? 'bold' : 'normal',
+                  color: isUser ? '#000' : 'white',
                 }}
               >
                 <span style={styles.rank}>{getRankIcon(rank)}</span>
