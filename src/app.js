@@ -81,9 +81,9 @@ export default function App() {
     setLoading(true);
     try {
       const tx = await contract.mint({ value: ethers.parseEther('0') });
-      // Stop blocking immediately after tx submission
+      // Immediately re-enable UI after submission
       setLoading(false);
-      // Process confirmation without blocking UI
+      // Process confirmation in background
       tx.wait()
         .then(async () => {
           await fetchOwnedNFTs();
@@ -135,17 +135,20 @@ export default function App() {
   const fetchTotals = async () => {
     if (!contract) return;
     try {
-      const total = await contract.totalSupply();
+      const totalBN = await contract.totalSupply();
+      const total = totalBN.toNumber();
       setTotalMinted(total.toString());
 
       let lit = 0;
-      const batchSize = 50;
+      // Increased batch size for fewer RPC calls
+      const batchSize = 500;
       for (let i = 1; i <= total; i += batchSize) {
-        const promises = [];
-        for (let j = 0; j < batchSize && i + j <= total; j++) {
-          promises.push(contract.getLitStatus(i + j));
+        const end = Math.min(total, i + batchSize - 1);
+        const batchPromises = [];
+        for (let j = i; j <= end; j++) {
+          batchPromises.push(contract.getLitStatus(j));
         }
-        const results = await Promise.allSettled(promises);
+        const results = await Promise.allSettled(batchPromises);
         results.forEach((res) => {
           if (res.status === 'fulfilled' && res.value === true) lit++;
         });
@@ -159,32 +162,36 @@ export default function App() {
   const fetchLeaderboard = async () => {
     if (!contract) return;
     try {
-      const total = await contract.totalSupply();
+      const totalBN = await contract.totalSupply();
+      const total = totalBN.toNumber();
       const litMap = {};
-      const batchSize = 25;
-
+      // Increased batch size here as well
+      const batchSize = 250;
       for (let i = 1; i <= total; i += batchSize) {
-        const litStatusBatch = await Promise.all(
-          Array.from({ length: batchSize }, (_, j) =>
-            i + j <= total ? contract.getLitStatus(i + j) : false
-          )
-        );
-
-        const ownerBatch = await Promise.all(
-          litStatusBatch.map((isLit, idx) =>
-            isLit ? contract.ownerOf(i + idx) : null
-          )
-        );
-
-        ownerBatch.forEach((owner) => {
-          if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
-        });
+        const end = Math.min(total, i + batchSize - 1);
+        const statusPromises = [];
+        for (let j = i; j <= end; j++) {
+          // For each token, only get its owner if lit
+          statusPromises.push(
+            contract.getLitStatus(j)
+              .then((isLit) => (isLit ? j : null))
+              .catch(() => null)
+          );
+        }
+        const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
+        if (litTokenIds.length) {
+          const ownerPromises = litTokenIds.map((id) =>
+            contract.ownerOf(id).catch(() => null)
+          );
+          const owners = await Promise.all(ownerPromises);
+          owners.forEach((owner) => {
+            if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+          });
+        }
       }
-
       const sorted = Object.entries(litMap)
         .sort(([, a], [, b]) => b - a)
         .map(([address, count], index) => ({ rank: index + 1, address, count }));
-
       setLeaderboard(sorted);
     } catch (err) {
       console.error(err);
@@ -212,7 +219,11 @@ export default function App() {
         <a href="https://x.com/PassThe_JOINT" target="_blank" rel="noopener noreferrer">
           <img src={xLogo} alt="X" style={styles.icon} />
         </a>
-        <a href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts" target="_blank" rel="noopener noreferrer">
+        <a
+          href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <img src={paintswapLogo} alt="PaintSwap" style={styles.icon} />
         </a>
       </div>
@@ -223,11 +234,15 @@ export default function App() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
-          <p style={styles.mintNote}>The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!</p>
+          <p style={styles.mintNote}>
+            The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
+          </p>
           <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
           <div style={styles.leaderboard}>
-            <p style={styles.leaderboardNote}>Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project</p>
+            <p style={styles.leaderboardNote}>
+              Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project
+            </p>
             <h2 style={styles.leaderboardTitle}>🏆 Leaderboard</h2>
             <ol style={styles.leaderboardList}>
               {leaderboard.map(({ rank, address, count }) => (
@@ -242,7 +257,7 @@ export default function App() {
                   }}
                 >
                   <span style={styles.rank}>{getRankIcon(rank)}</span>{' '}
-                  <span style={styles.addressText}>{address}</span> {' '}
+                  <span style={styles.addressText}>{address}</span>{' '}
                   <span style={styles.count}>{count} lit</span>
                 </li>
               ))}
