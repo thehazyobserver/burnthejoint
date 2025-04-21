@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ethers } from 'ethers';
 
-const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
-const SONIC_RPC = 'https://sonic.drpc.org';
-const contractABI = require('../abi/LIGHTTHEJOINT.json');
+const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoint/version/latest';
 
-const CACHE_KEY = 'lit_leaderboard_cache';
-const CACHE_EXPIRY_MINUTES = 10;
+const QUERY = `{
+  jointLits(first: 1000, orderBy: tokenId, orderDirection: asc) {
+    tokenId
+    id
+    owner
+  }
+}`;
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -16,59 +18,26 @@ export default function LeaderboardPage() {
   const [walletRank, setWalletRank] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchLeaderboard = async (detectedWallet = null, forceRefresh = false) => {
+  const fetchLeaderboard = async (detectedWallet = null) => {
     setLoading(true);
     try {
-      const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-      const now = Date.now();
+      const response = await fetch(GRAPH_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: QUERY }),
+      });
 
-      if (!forceRefresh && cached && now - cached.timestamp < CACHE_EXPIRY_MINUTES * 60 * 1000) {
-        setLeaderboard(cached.leaderboard);
-        if (detectedWallet) {
-          const entry = cached.leaderboard.find(e => e.address === detectedWallet.toLowerCase());
-          setWalletRank(entry ? entry.rank : '-');
-        }
-        setLoading(false);
-        return;
+      const { data } = await response.json();
+      const litMap = {};
+
+      for (const { owner } of data.jointLits) {
+        const addr = owner.toLowerCase();
+        litMap[addr] = (litMap[addr] || 0) + 1;
       }
 
-      const provider = new ethers.JsonRpcProvider(SONIC_RPC);
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
-      const total = Number(await contract.totalSupply());
-      const batchSize = 250;
-      const ownerCache = new Map();
-
-      for (let i = 1; i <= total; i += batchSize) {
-        const end = Math.min(i + batchSize - 1, total);
-        const ids = Array.from({ length: end - i + 1 }, (_, idx) => i + idx);
-
-        const statusResults = await Promise.allSettled(
-          ids.map(id => contract.getLitStatus(id).then(res => res ? id : null))
-        );
-
-        const litTokenIds = statusResults.map(res => res.status === 'fulfilled' ? res.value : null).filter(Boolean);
-
-        await Promise.allSettled(
-          litTokenIds.map(id =>
-            contract.ownerOf(id)
-              .then(owner => {
-                const addr = owner.toLowerCase();
-                ownerCache.set(addr, (ownerCache.get(addr) || 0) + 1);
-              })
-              .catch(() => null)
-          )
-        );
-
-        await new Promise(resolve => requestAnimationFrame(resolve));
-      }
-
-      const entries = Array.from(ownerCache.entries());
-      entries.sort(([, a], [, b]) => b - a);
-      const top500 = entries.slice(0, 500);
-
-      const sorted = top500.map(([address, count], index) => ({ rank: index + 1, address, count }));
-
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ leaderboard: sorted, timestamp: now }));
+      const sorted = Object.entries(litMap)
+        .sort(([, a], [, b]) => b - a)
+        .map(([address, count], index) => ({ rank: index + 1, address, count }));
 
       setLeaderboard(sorted);
       if (detectedWallet) {
@@ -213,7 +182,7 @@ export default function LeaderboardPage() {
       )}
 
       {walletAddress && (
-        <button style={styles.connectBtn} onClick={() => fetchLeaderboard(walletAddress, true)}>
+        <button style={styles.connectBtn} onClick={() => fetchLeaderboard(walletAddress)}>
           🔄 Refresh Leaderboard
         </button>
       )}
