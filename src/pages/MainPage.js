@@ -173,7 +173,7 @@ function MainPage() {
           );
           const owners = await Promise.all(ownerPromises);
           owners.forEach((owner) => {
-            if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+            if (owner) litMap[owner.toLowerCase()] = (litMap[owner.toLowerCase()] || 0) + 1;
           });
         }
       }
@@ -218,9 +218,16 @@ function MainPage() {
         <>
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
-          {walletRank && (
-            <p style={styles.stats}>Your Ranking: {walletRank}</p>
+
+          {/* Wallet Rank Fallbacks */}
+          {walletRank === null ? (
+            <p style={styles.stats}>Calculating your rank...</p>
+          ) : walletRank === '-' ? (
+            <p style={styles.stats}>You're not on the leaderboard yet — light some joints to rank up!</p>
+          ) : (
+            <p style={styles.stats}>Your Ranking: #{walletRank}</p>
           )}
+
           <p style={styles.mintNote}>
             The FREE Mint will be live for roughly 24 hours! Max 1 NFT per mint. No limit! Don't wait!
           </p>

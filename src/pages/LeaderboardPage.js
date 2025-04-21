@@ -52,7 +52,7 @@ export default function LeaderboardPage() {
 
       if (detectedWallet) {
         const entry = sorted.find(e => e.address === detectedWallet.toLowerCase());
-        if (entry) setWalletRank(entry.rank);
+        setWalletRank(entry ? entry.rank : '-');
       }
     } catch (err) {
       console.error(err);
@@ -191,9 +191,13 @@ export default function LeaderboardPage() {
         </button>
       )}
 
-      {walletAddress && walletRank && (
+      {walletAddress && (
         <p style={styles.yourRankText}>
-          Your Wallet Rank: {getRankIcon(walletRank)}
+          {walletRank === null
+            ? 'Calculating your rank...'
+            : walletRank === '-'
+              ? "You're not on the leaderboard yet — light some joints to rank up!"
+              : `Your Wallet Rank: ${getRankIcon(walletRank)}`}
         </p>
       )}
 
