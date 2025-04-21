@@ -6,6 +6,9 @@ const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
 const contractABI = require('../abi/LIGHTTHEJOINT.json');
 
+const CACHE_KEY = 'lit_leaderboard_cache';
+const CACHE_EXPIRY_MINUTES = 10;
+
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [displayCount, setDisplayCount] = useState(50);
@@ -13,9 +16,23 @@ export default function LeaderboardPage() {
   const [walletRank, setWalletRank] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchLeaderboard = async (detectedWallet = null) => {
+  const fetchLeaderboard = async (detectedWallet = null, forceRefresh = false) => {
     setLoading(true);
+
     try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+      const now = Date.now();
+
+      if (!forceRefresh && cached && now - cached.timestamp < CACHE_EXPIRY_MINUTES * 60 * 1000) {
+        setLeaderboard(cached.leaderboard);
+        if (detectedWallet) {
+          const entry = cached.leaderboard.find(e => e.address === detectedWallet.toLowerCase());
+          setWalletRank(entry ? entry.rank : '-');
+        }
+        setLoading(false);
+        return;
+      }
+
       const provider = new ethers.JsonRpcProvider(SONIC_RPC);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
       const total = Number(await contract.totalSupply());
@@ -48,8 +65,12 @@ export default function LeaderboardPage() {
         .sort(([, a], [, b]) => b - a)
         .map(([address, count], index) => ({ rank: index + 1, address, count }));
 
-      setLeaderboard(sorted);
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        leaderboard: sorted,
+        timestamp: now
+      }));
 
+      setLeaderboard(sorted);
       if (detectedWallet) {
         const entry = sorted.find(e => e.address === detectedWallet.toLowerCase());
         setWalletRank(entry ? entry.rank : '-');
@@ -192,12 +213,14 @@ export default function LeaderboardPage() {
       )}
 
       {walletAddress && (
+        <button style={styles.connectBtn} onClick={() => fetchLeaderboard(walletAddress, true)}>
+          🔄 Refresh Leaderboard
+        </button>
+      )}
+
+      {walletAddress && walletRank && (
         <p style={styles.yourRankText}>
-          {walletRank === null
-            ? 'Calculating your rank...'
-            : walletRank === '-'
-              ? "You're not on the leaderboard yet — light some joints to rank up!"
-              : `Your Wallet Rank: ${getRankIcon(walletRank)}`}
+          Your Wallet Rank: {getRankIcon(walletRank)}
         </p>
       )}
 
