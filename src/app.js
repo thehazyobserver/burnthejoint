@@ -269,7 +269,6 @@ export default function App() {
     </div>
   );
 }
-
 const styles = {
   container: {
     maxWidth: '100%',
