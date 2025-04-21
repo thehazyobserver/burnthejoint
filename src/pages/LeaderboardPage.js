@@ -18,25 +18,42 @@ async function fetchAllLitEvents() {
       }
     }`;
 
-    const response = await fetch(GRAPH_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
+    try {
+      const response = await fetch(GRAPH_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
 
-    const { data } = await response.json();
-    const events = data?.jointLits || [];
-    allEvents.push(...events);
+      const text = await response.text();
 
-    if (events.length < batchSize) {
+      // Validate JSON before parsing
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        console.error('GraphQL response not valid JSON:', text);
+        throw new Error('GraphQL returned invalid JSON');
+      }
+
+      const events = json?.data?.jointLits || [];
+      allEvents.push(...events);
+
+      if (events.length < batchSize) {
+        keepFetching = false;
+      } else {
+        skip += batchSize;
+        await new Promise((resolve) => setTimeout(resolve, 250)); // prevent rate limit
+      }
+    } catch (err) {
+      console.error('Error fetching lit events:', err.message || err);
       keepFetching = false;
-    } else {
-      skip += batchSize;
     }
   }
 
   return allEvents;
 }
+
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
