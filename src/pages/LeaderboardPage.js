@@ -6,7 +6,7 @@ const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoi
 async function fetchAllLitEvents() {
   const allEvents = [];
   let skip = 0;
-  const batchSize = 1000;
+  const batchSize = 100;
   let keepFetching = true;
 
   while (keepFetching) {
