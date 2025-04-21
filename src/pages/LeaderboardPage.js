@@ -21,10 +21,13 @@ async function fetchAllLitEvents() {
     try {
       const response = await fetch(GRAPH_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer f2b5c4d9858bbf75ec5ba411f6e88e38', // 👈 Your API key here
+        },
         body: JSON.stringify({ query }),
       });
-
+      
       const text = await response.text();
 
       // Validate JSON before parsing
