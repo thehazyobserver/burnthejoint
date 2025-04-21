@@ -14,7 +14,7 @@ import paintswapLogo from '../assets/images/paintswap.svg';
 const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
 const SONIC_CHAIN_ID = 146;
-const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoint/version/latest';
+const GRAPH_ENDPOINT = 'https://gateway.thegraph.com/api/subgraphs/id/FxzQ12s3nGgptybku5TrdqjtB18f7hB26ePuLX3bVZuU';
 
 function MainPage() {
   const [provider, setProvider] = useState(null);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoint/version/latest';
+const GRAPH_ENDPOINT = 'https://gateway.thegraph.com/api/subgraphs/id/FxzQ12s3nGgptybku5TrdqjtB18f7hB26ePuLX3bVZuU';
 
 async function fetchAllLitEvents() {
   const allEvents = [];
