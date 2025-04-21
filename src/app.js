@@ -26,26 +26,39 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState([]);
 
   const connectWallet = async () => {
-    const web3Modal = new Web3Modal({ cacheProvider: false, providerOptions: {} });
+    const web3Modal = new Web3Modal({
+      cacheProvider: false,
+      providerOptions: {},
+    });
     const connection = await web3Modal.connect();
     const provider = new ethers.BrowserProvider(connection);
     const network = await provider.getNetwork();
 
     if (network.chainId !== SONIC_CHAIN_ID) {
       try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x92' }] });
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x92' }],
+        });
       } catch (switchError) {
         if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-              chainId: '0x92',
-              chainName: 'Sonic',
-              rpcUrls: [SONIC_RPC],
-              nativeCurrency: { name: 'S', symbol: 'S', decimals: 18 },
-              blockExplorerUrls: ['https://sonicscan.io'],
-            }],
-          });
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x92',
+                  chainName: 'Sonic',
+                  rpcUrls: [SONIC_RPC],
+                  nativeCurrency: { name: 'S', symbol: 'S', decimals: 18 },
+                  blockExplorerUrls: ['https://sonicscan.io'],
+                },
+              ],
+            });
+          } catch (addError) {
+            console.error('Add chain error:', addError);
+            return;
+          }
         } else {
           console.error('Switch chain error:', switchError);
           return;
@@ -71,7 +84,6 @@ export default function App() {
       await tx.wait();
       await fetchOwnedNFTs();
       await fetchTotals();
-      await fetchLeaderboard();
     } catch (err) {
       console.error(err);
     }
@@ -116,21 +128,19 @@ export default function App() {
       const total = await contract.totalSupply();
       setTotalMinted(total.toString());
 
+      let lit = 0;
       const batchSize = 50;
-      const allBatches = [];
       for (let i = 1; i <= total; i += batchSize) {
-        const batch = Array.from({ length: Math.min(batchSize, total - i + 1) }, (_, j) => i + j);
-        allBatches.push(batch);
+        const promises = [];
+        for (let j = 0; j < batchSize && i + j <= total; j++) {
+          promises.push(contract.getLitStatus(i + j));
+        }
+        const results = await Promise.allSettled(promises);
+        results.forEach((res) => {
+          if (res.status === 'fulfilled' && res.value === true) lit++;
+        });
       }
-
-      const allPromises = allBatches.map(async (batch) => {
-        const statuses = await Promise.all(batch.map(id => contract.getLitStatus(id)));
-        return statuses.filter(status => status).length;
-      });
-
-      const litCounts = await Promise.all(allPromises);
-      const litTotal = litCounts.reduce((sum, val) => sum + val, 0);
-      setTotalLit(litTotal);
+      setTotalLit(lit);
     } catch (err) {
       console.error(err);
     }
@@ -141,31 +151,30 @@ export default function App() {
     try {
       const total = await contract.totalSupply();
       const litMap = {};
-      const batchSize = 50;
+      const batchSize = 25;
+
       for (let i = 1; i <= total; i += batchSize) {
-        const tokenIds = [];
-        for (let j = 0; j < batchSize && i + j <= total; j++) {
-          tokenIds.push(i + j);
-        }
-        const litStatuses = await Promise.all(
-          tokenIds.map((id) => contract.getLitStatus(id))
+        const litStatusBatch = await Promise.all(
+          Array.from({ length: batchSize }, (_, j) =>
+            i + j <= total ? contract.getLitStatus(i + j) : false
+          )
         );
-        const owners = await Promise.all(
-          tokenIds.map((id) => contract.ownerOf(id).catch(() => null))
+
+        const ownerBatch = await Promise.all(
+          litStatusBatch.map((isLit, idx) =>
+            isLit ? contract.ownerOf(i + idx) : null
+          )
         );
-        for (let k = 0; k < tokenIds.length; k++) {
-          const owner = owners[k];
-          if (owner && litStatuses[k]) {
-            litMap[owner] = (litMap[owner] || 0) + 1;
-          }
-        }
+
+        ownerBatch.forEach((owner) => {
+          if (owner) litMap[owner] = (litMap[owner] || 0) + 1;
+        });
       }
 
       const sorted = Object.entries(litMap)
         .sort(([, a], [, b]) => b - a)
         .map(([address, count], index) => ({ rank: index + 1, address, count }));
 
-      console.log('Sorted leaderboard:', sorted);
       setLeaderboard(sorted);
     } catch (err) {
       console.error(err);
