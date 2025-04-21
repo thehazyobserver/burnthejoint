@@ -162,15 +162,14 @@ function MainPage() {
       }`;
 
       const response = await fetch(GRAPH_ENDPOINT, {
-        const response = await fetch(GRAPH_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer f2b5c4d9858bbf75ec5ba411f6e88e38', // 👈 Your API key here
-          },
-          body: JSON.stringify({ query }),
-        });
-        
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer f2b5c4d9858bbf75ec5ba411f6e88e38',
+        },
+        body: JSON.stringify({ query }),
+      });
+      
 
       const { data } = await response.json();
       const events = data?.jointLits || [];
