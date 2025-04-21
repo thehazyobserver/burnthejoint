@@ -3,13 +3,40 @@ import { Link } from 'react-router-dom';
 
 const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoint/version/latest';
 
-const QUERY = `{
-  jointLits(first: 1000, orderBy: tokenId, orderDirection: asc) {
-    tokenId
-    id
-    owner
+async function fetchAllLitEvents() {
+  const allEvents = [];
+  let skip = 0;
+  const batchSize = 1000;
+  let keepFetching = true;
+
+  while (keepFetching) {
+    const query = `{
+      jointLits(first: ${batchSize}, skip: ${skip}, orderBy: tokenId, orderDirection: asc) {
+        tokenId
+        id
+        owner
+      }
+    }`;
+
+    const response = await fetch(GRAPH_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+
+    const { data } = await response.json();
+    const events = data?.jointLits || [];
+    allEvents.push(...events);
+
+    if (events.length < batchSize) {
+      keepFetching = false;
+    } else {
+      skip += batchSize;
+    }
   }
-}`;
+
+  return allEvents;
+}
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -21,16 +48,10 @@ export default function LeaderboardPage() {
   const fetchLeaderboard = async (detectedWallet = null) => {
     setLoading(true);
     try {
-      const response = await fetch(GRAPH_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: QUERY }),
-      });
-
-      const { data } = await response.json();
+      const events = await fetchAllLitEvents();
       const litMap = {};
 
-      for (const { owner } of data.jointLits) {
+      for (const { owner } of events) {
         const addr = owner.toLowerCase();
         litMap[addr] = (litMap[addr] || 0) + 1;
       }
