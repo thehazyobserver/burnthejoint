@@ -18,7 +18,6 @@ export default function LeaderboardPage() {
 
   const fetchLeaderboard = async (detectedWallet = null, forceRefresh = false) => {
     setLoading(true);
-
     try {
       const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
       const now = Date.now();
@@ -37,7 +36,7 @@ export default function LeaderboardPage() {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
       const total = Number(await contract.totalSupply());
       const batchSize = 250;
-      const litMap = {};
+      const ownerCache = new Map();
 
       for (let i = 1; i <= total; i += batchSize) {
         const end = Math.min(i + batchSize - 1, total);
@@ -46,29 +45,30 @@ export default function LeaderboardPage() {
         const statusResults = await Promise.allSettled(
           ids.map(id => contract.getLitStatus(id).then(res => res ? id : null))
         );
-        const litTokenIds = statusResults
-          .map(res => res.status === 'fulfilled' ? res.value : null)
-          .filter(Boolean);
 
-        const ownerResults = await Promise.allSettled(
-          litTokenIds.map(id => contract.ownerOf(id).catch(() => null))
+        const litTokenIds = statusResults.map(res => res.status === 'fulfilled' ? res.value : null).filter(Boolean);
+
+        await Promise.allSettled(
+          litTokenIds.map(id =>
+            contract.ownerOf(id)
+              .then(owner => {
+                const addr = owner.toLowerCase();
+                ownerCache.set(addr, (ownerCache.get(addr) || 0) + 1);
+              })
+              .catch(() => null)
+          )
         );
-        ownerResults.forEach(res => {
-          if (res.status === 'fulfilled' && res.value) {
-            const owner = res.value.toLowerCase();
-            litMap[owner] = (litMap[owner] || 0) + 1;
-          }
-        });
+
+        await new Promise(resolve => requestAnimationFrame(resolve));
       }
 
-      const sorted = Object.entries(litMap)
-        .sort(([, a], [, b]) => b - a)
-        .map(([address, count], index) => ({ rank: index + 1, address, count }));
+      const entries = Array.from(ownerCache.entries());
+      entries.sort(([, a], [, b]) => b - a);
+      const top500 = entries.slice(0, 500);
 
-      localStorage.setItem(CACHE_KEY, JSON.stringify({
-        leaderboard: sorted,
-        timestamp: now
-      }));
+      const sorted = top500.map(([address, count], index) => ({ rank: index + 1, address, count }));
+
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ leaderboard: sorted, timestamp: now }));
 
       setLeaderboard(sorted);
       if (detectedWallet) {
@@ -218,10 +218,10 @@ export default function LeaderboardPage() {
         </button>
       )}
 
+      {loading && <p style={{ textAlign: 'center', fontWeight: 'bold' }}>Loading leaderboard...</p>}
+
       {walletAddress && walletRank && (
-        <p style={styles.yourRankText}>
-          Your Wallet Rank: {getRankIcon(walletRank)}
-        </p>
+        <p style={styles.yourRankText}>Your Wallet Rank: {getRankIcon(walletRank)}</p>
       )}
 
       <div style={styles.leaderboard}>
