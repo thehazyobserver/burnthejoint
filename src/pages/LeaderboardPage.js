@@ -12,7 +12,7 @@ export default function LeaderboardPage() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletRank, setWalletRank] = useState(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (detectedWallet = null) => {
     try {
       const provider = new ethers.JsonRpcProvider(SONIC_RPC);
       const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, provider);
@@ -52,9 +52,9 @@ export default function LeaderboardPage() {
 
       setLeaderboard(sorted);
 
-      if (walletAddress) {
+      if (detectedWallet) {
         const entry = sorted.find(
-          (entry) => entry.address.toLowerCase() === walletAddress.toLowerCase()
+          (entry) => entry.address.toLowerCase() === detectedWallet.toLowerCase()
         );
         if (entry) setWalletRank(entry.rank);
       }
@@ -64,18 +64,27 @@ export default function LeaderboardPage() {
   };
 
   const detectWallet = async () => {
-    if (window.ethereum && window.ethereum.selectedAddress) {
-      setWalletAddress(window.ethereum.selectedAddress.toLowerCase());
+    if (window.ethereum) {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (accounts.length > 0) {
+        const wallet = accounts[0].toLowerCase();
+        setWalletAddress(wallet);
+        fetchLeaderboard(wallet);
+      }
+    } else {
+      alert('MetaMask not found. Please install it to connect your wallet.');
     }
   };
 
   useEffect(() => {
-    detectWallet();
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      const wallet = window.ethereum.selectedAddress.toLowerCase();
+      setWalletAddress(wallet);
+      fetchLeaderboard(wallet);
+    } else {
+      fetchLeaderboard(null); // still fetch leaderboard for read-only view
+    }
   }, []);
-
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [walletAddress]);
 
   const getRankIcon = (rank) => {
     if (rank === 1) return '🥇';
@@ -154,24 +163,45 @@ export default function LeaderboardPage() {
       fontWeight: '600',
       color: '#000',
     },
+    connectBtn: {
+      display: 'block',
+      margin: '1rem auto',
+      padding: '0.5rem 1rem',
+      fontSize: '1rem',
+      fontWeight: 'bold',
+      color: '#fff',
+      backgroundColor: '#075ad0',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer',
+    },
   };
 
   return (
     <div style={{ padding: '1rem' }}>
       <Link to="/" style={styles.backLink}>← Back to Mint</Link>
       <h1 style={styles.leaderboardTitle}>🏆 Leaderboard</h1>
+
+      {!walletAddress && (
+        <button style={styles.connectBtn} onClick={detectWallet}>
+          Connect Wallet to See Your Rank
+        </button>
+      )}
+
       {walletAddress && walletRank && (
         <p style={styles.yourRankText}>
           Your Wallet Rank: {getRankIcon(walletRank)}
         </p>
       )}
+
       <p style={styles.leaderboardNote}>
         Climb the leaderboard to secure whitelist spots for Pass the $JOINT's upcoming project
       </p>
+
       <div style={styles.leaderboard}>
         <ol style={styles.leaderboardList}>
           {leaderboard.slice(0, displayCount).map(({ rank, address, count }) => {
-            const isUser = address.toLowerCase() === walletAddress;
+            const isUser = walletAddress && address.toLowerCase() === walletAddress;
             return (
               <li
                 key={rank}
@@ -188,6 +218,7 @@ export default function LeaderboardPage() {
             );
           })}
         </ol>
+
         {leaderboard.length > displayCount && (
           <button
             style={styles.loadMoreBtn}
