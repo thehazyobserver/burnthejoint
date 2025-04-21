@@ -14,6 +14,7 @@ import paintswapLogo from '../assets/images/paintswap.svg';
 const CONTRACT_ADDRESS = '0x5e4C6B87B644430Fa71F9158B5292808756b7D44';
 const SONIC_RPC = 'https://sonic.drpc.org';
 const SONIC_CHAIN_ID = 146;
+const GRAPH_ENDPOINT = 'https://api.studio.thegraph.com/query/109706/lightthejoint/version/latest';
 
 function MainPage() {
   const [provider, setProvider] = useState(null);
@@ -83,7 +84,7 @@ function MainPage() {
       tx.wait().then(async () => {
         await fetchOwnedNFTs();
         await fetchTotals();
-        await fetchWalletRanking();
+        await fetchLitDataFromGraph();
       }).catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
@@ -100,7 +101,7 @@ function MainPage() {
       tx.wait().then(async () => {
         await fetchOwnedNFTs();
         await fetchTotals();
-        await fetchWalletRanking();
+        await fetchLitDataFromGraph();
       }).catch((err) => console.error('TX error:', err));
     } catch (err) {
       console.error(err);
@@ -131,69 +132,77 @@ function MainPage() {
       const totalBN = await contract.totalSupply();
       const total = Number(totalBN);
       setTotalMinted(total.toString());
-
-      let lit = 0;
-      const batchSize = 500;
-      for (let i = 1; i <= total; i += batchSize) {
-        const end = Math.min(total, i + batchSize - 1);
-        const batchPromises = [];
-        for (let j = i; j <= end; j++) {
-          batchPromises.push(contract.getLitStatus(j));
-        }
-        const results = await Promise.allSettled(batchPromises);
-        results.forEach((res) => {
-          if (res.status === 'fulfilled' && res.value === true) lit++;
-        });
-      }
-      setTotalLit(lit);
     } catch (err) {
       console.error(err);
     }
   };
 
-  const fetchWalletRanking = async () => {
-    if (!contract || !account) return;
+  const fetchLitDataFromGraph = async () => {
     try {
-      const totalBN = await contract.totalSupply();
-      const total = Number(totalBN);
-      const litMap = {};
-      const batchSize = 250;
-      for (let i = 1; i <= total; i += batchSize) {
-        const end = Math.min(total, i + batchSize - 1);
-        const statusPromises = [];
-        for (let j = i; j <= end; j++) {
-          statusPromises.push(
-            contract.getLitStatus(j).then((isLit) => (isLit ? j : null)).catch(() => null)
-          );
+      const { totalLit, walletRank } = await fetchLitStats(account);
+      setTotalLit(totalLit);
+      setWalletRank(walletRank ?? '-');
+    } catch (err) {
+      console.error('GraphQL error:', err);
+    }
+  };
+
+  async function fetchLitStats(walletAddress = null) {
+    const allEvents = [];
+    let skip = 0;
+    const batchSize = 1000;
+    let keepFetching = true;
+
+    while (keepFetching) {
+      const query = `{
+        jointLits(first: ${batchSize}, skip: ${skip}, orderBy: tokenId, orderDirection: asc) {
+          tokenId
+          owner
         }
-        const litTokenIds = (await Promise.all(statusPromises)).filter((id) => id !== null);
-        if (litTokenIds.length) {
-          const ownerPromises = litTokenIds.map((id) =>
-            contract.ownerOf(id).catch(() => null)
-          );
-          const owners = await Promise.all(ownerPromises);
-          owners.forEach((owner) => {
-            if (owner) litMap[owner.toLowerCase()] = (litMap[owner.toLowerCase()] || 0) + 1;
-          });
-        }
+      }`;
+
+      const response = await fetch(GRAPH_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+
+      const { data } = await response.json();
+      const events = data?.jointLits || [];
+      allEvents.push(...events);
+      if (events.length < batchSize) {
+        keepFetching = false;
+      } else {
+        skip += batchSize;
       }
+    }
+
+    const totalLit = allEvents.length;
+
+    let walletRank = null;
+    if (walletAddress) {
+      const litMap = {};
+      for (const { owner } of allEvents) {
+        const addr = owner.toLowerCase();
+        litMap[addr] = (litMap[addr] || 0) + 1;
+      }
+
       const sorted = Object.entries(litMap)
         .sort(([, a], [, b]) => b - a)
         .map(([address, count], index) => ({ rank: index + 1, address, count }));
-      const walletEntry = sorted.find(
-        (entry) => entry.address.toLowerCase() === account.toLowerCase()
-      );
-      setWalletRank(walletEntry ? walletEntry.rank : '-');
-    } catch (err) {
-      console.error(err);
+
+      const entry = sorted.find(e => e.address === walletAddress.toLowerCase());
+      walletRank = entry ? entry.rank : '-';
     }
-  };
+
+    return { totalLit, walletRank };
+  }
 
   useEffect(() => {
     if (contract && account) {
       fetchOwnedNFTs();
       fetchTotals();
-      fetchWalletRanking();
+      fetchLitDataFromGraph();
     }
   }, [contract, account]);
 
@@ -219,7 +228,6 @@ function MainPage() {
           <p style={styles.address}>Connected: {account}</p>
           <p style={styles.stats}>Total Minted: {totalMinted} | Total Lit: {totalLit}</p>
 
-          {/* Wallet Rank Fallbacks */}
           {walletRank === null ? (
             <p style={styles.stats}>Calculating your rank...</p>
           ) : walletRank === '-' ? (
