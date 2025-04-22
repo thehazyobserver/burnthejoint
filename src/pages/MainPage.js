@@ -4,7 +4,6 @@ import { ethers } from 'ethers';
 import Web3Modal from 'web3modal';
 import contractABI from '../abi/LIGHTTHEJOINT.json';
 import ConnectWallet from '../components/ConnectWallet';
-import MintButton from '../components/MintButton';
 import NFTGallery from '../components/NFTGallery';
 import litJointImg from '../assets/images/litjoint.png';
 import unlitJointImg from '../assets/images/unlitjoint.png';
@@ -217,7 +216,7 @@ function MainPage() {
           <img src={xLogo} alt="X" style={styles.icon} />
         </a>
         <a
-          href="https://paintswap.io/sonic/collections/0x5e4c6b87b644430fa71f9158b5292808756b7d44/nfts"
+          href="https://paintswap.io/sonic/collections/0x5e4C6B87B644430fa71F9158b5292808756b7D44/nfts"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -248,7 +247,6 @@ function MainPage() {
               🏆 View Leaderboard
             </Link>
           </div>
-          <MintButton onMint={mint} loading={loading} />
           <NFTGallery nfts={ownedNFTs} onLight={lightJoint} loading={loading} />
         </>
       )}
